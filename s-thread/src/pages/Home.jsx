@@ -80,7 +80,7 @@ const Home = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold leading-tight"
+                className="text-4xl xs:text-5xl sm:text-6xl lg:text-7xl font-display font-bold leading-tight"
               >
                 <span className="gradient-text">Elevate</span> Your
                 <br />
@@ -129,7 +129,7 @@ const Home = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="mt-12 grid grid-cols-3 gap-8"
+                className="mt-12 grid grid-cols-3 gap-3 xs:gap-6 sm:gap-8"
               >
                 {[
                   { value: '50K+', label: 'Happy Customers' },
