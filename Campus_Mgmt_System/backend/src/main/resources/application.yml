@@ -1,0 +1,27 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: CampusConnect
+  data:
+    mongodb:
+      # To connect to MongoDB Atlas Cloud, set environment variable MONGO_URI or replace default below:
+      # Atlas URI format: mongodb+srv://<username>:<password>@shlokmishra.btu53jn.mongodb.net/campusconnect_db?retryWrites=true&w=majority
+      uri: ${MONGO_URI:mongodb://localhost:27017/campusconnect_db}
+      auto-index-creation: true
+
+campusconnect:
+  jwt:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expirationMs: 86400000 # 24 hours
+  gemini:
+    apiKey: ${GEMINI_API_KEY:AIzaSyDaMdVD-LW--YKNeN6EVECEfD6fCiF2MOA}
+
+logging:
+  level:
+    root: INFO
+    com.campusconnect: DEBUG
+    org.springframework.data.mongodb: INFO
