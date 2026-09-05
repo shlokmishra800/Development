@@ -31,7 +31,49 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return userData;
     } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid credentials or login failure';
+      console.warn('Backend login request failed, checking demo fallback accounts...', err);
+      
+      // Fallback demo accounts if backend is currently offline / not connected yet
+      const demoUsers = {
+        'student@campus.edu': {
+          id: 'demo-student-id',
+          email: 'student@campus.edu',
+          fullName: 'Shlok Mishra',
+          role: 'ROLE_STUDENT',
+          profileDetails: { id: 'demo-student-id', rollNumber: '2026CSE001', department: 'Computer Science' }
+        },
+        'teacher@campus.edu': {
+          id: 'demo-teacher-id',
+          email: 'teacher@campus.edu',
+          fullName: 'Prof. Alok Sharma',
+          role: 'ROLE_TEACHER',
+          profileDetails: { id: 'demo-teacher-id', employeeId: 'EMP-1001', department: 'Computer Science' }
+        },
+        'admin@campus.edu': {
+          id: 'demo-admin-id',
+          email: 'admin@campus.edu',
+          fullName: 'System Administrator',
+          role: 'ROLE_ADMIN',
+          profileDetails: { id: 'demo-admin-id', phone: '+91 9876543210' }
+        }
+      };
+
+      const demoPasswords = {
+        'student@campus.edu': 'student123',
+        'teacher@campus.edu': 'teacher123',
+        'admin@campus.edu': 'admin123'
+      };
+
+      const cleanEmail = email?.trim().toLowerCase();
+      if (demoUsers[cleanEmail] && password === demoPasswords[cleanEmail]) {
+        const userData = demoUsers[cleanEmail];
+        localStorage.setItem('campus_jwt_token', 'demo-token-' + userData.role);
+        localStorage.setItem('campus_user', JSON.stringify(userData));
+        setUser(userData);
+        return userData;
+      }
+
+      const msg = err.response?.data?.message || 'Invalid email or password credentials.';
       setError(msg);
       throw new Error(msg);
     } finally {
