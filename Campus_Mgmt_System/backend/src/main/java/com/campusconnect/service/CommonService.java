@@ -94,10 +94,10 @@ public class CommonService {
         Map<String, String> response = new HashMap<>();
         String reply = null;
 
-        // Try Live Google Gemini AI API Call
-        try {
-            if (geminiApiKey != null && !geminiApiKey.isEmpty()) {
-                String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiApiKey;
+        // Try Live Google Gemini AI API Call if a non-dummy API key is configured
+        if (geminiApiKey != null && !geminiApiKey.trim().isEmpty() && !geminiApiKey.startsWith("AIzaSyDaMdVD")) {
+            try {
+                String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiApiKey.trim();
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
@@ -123,26 +123,36 @@ public class CommonService {
                         reply = textNode.asText();
                     }
                 }
+            } catch (Exception e) {
+                logger.warn("Live Gemini API call failed or rate limited: {}. Falling back to campus rule engine.", e.getMessage());
             }
-        } catch (Exception e) {
-            logger.warn("Live Gemini API call failed or rate limited: {}. Falling back to campus rule engine.", e.getMessage());
         }
 
-        // Fallback to Smart Campus Q&A Rule Engine if live API is offline or key quota exhausted
+        // Smart Campus Q&A Rule Engine (Fallback when API key is offline, default, or rate limited)
         if (reply == null || reply.trim().isEmpty()) {
-            String lower = prompt.toLowerCase();
-            if (lower.contains("next class") || lower.contains("class time")) {
+            String lower = prompt != null ? prompt.toLowerCase().trim() : "";
+            if (lower.contains("next class") || lower.contains("class time") || lower.contains("timetable") || lower.contains("schedule") || lower.contains("routine")) {
                 reply = "Your next class is Java Programming (CS501) with Prof. Alok Sharma in Room A-204 at 09:30 AM.";
-            } else if (lower.contains("attendance")) {
+            } else if (lower.contains("attendance") || lower.contains("absent") || lower.contains("percentage")) {
                 reply = "Your overall campus attendance is 87%. Your highest attendance is in Java Programming (90%), and Discrete Mathematics requires attention (68%).";
-            } else if (lower.contains("assignment") || lower.contains("pending")) {
+            } else if (lower.contains("assignment") || lower.contains("pending") || lower.contains("homework") || lower.contains("submission") || lower.contains("due")) {
                 reply = "You have 2 pending assignments: 'Spring Boot & Microservices Project' (Due in 3 days) and 'Database Normalization' (Due in 5 days).";
-            } else if (lower.contains("exam") || lower.contains("result")) {
-                reply = "The Mid-Semester Examination schedule has been published. Mid-term exams start on October 15th, 2026.";
-            } else if (lower.contains("event") || lower.contains("hackathon")) {
+            } else if (lower.contains("exam") || lower.contains("result") || lower.contains("midterm") || lower.contains("final") || lower.contains("test") || lower.contains("grade")) {
+                reply = "The Mid-Semester Examination schedule has been published. Mid-term exams start on October 15th, 2026. Detailed seating plans are available under Exam Cell.";
+            } else if (lower.contains("event") || lower.contains("hackathon") || lower.contains("workshop") || lower.contains("fest")) {
                 reply = "The 'CampusConnect Smart Hackathon 2026' is scheduled for 12th September in the Main Auditorium. Registration is currently open!";
+            } else if (lower.contains("fee") || lower.contains("payment") || lower.contains("tuition") || lower.contains("dues")) {
+                reply = "Semester fee payment portal is open. The last date for zero-penalty tuition fee submission is September 30th.";
+            } else if (lower.contains("library") || lower.contains("book") || lower.contains("borrow")) {
+                reply = "Central Library is open from 8:00 AM to 9:00 PM on weekdays. You currently have 1 book issued: 'Clean Code by Robert C. Martin' (Due: Sep 14).";
+            } else if (lower.contains("hostel") || lower.contains("room") || lower.contains("mess")) {
+                reply = "Hostel Mess Menu & Room allotment details can be checked under the Campus Services section.";
+            } else if (lower.contains("teacher") || lower.contains("professor") || lower.contains("faculty") || lower.contains("contact")) {
+                reply = "You can view directory details for all faculty members and schedule office hour appointments from your Student Dashboard.";
+            } else if (lower.contains("hi") || lower.contains("hello") || lower.contains("hey") || lower.contains("help")) {
+                reply = "Hello! I am your CampusConnect AI Assistant. How can I assist you today? You can ask about your class timetable, attendance, pending assignments, exams, or campus events!";
             } else {
-                reply = "I am CampusConnect AI Assistant powered by Google Gemini. I can assist you with your class timetable, attendance status, assignment deadlines, exam dates, and campus events. How can I help you today?";
+                reply = "I am CampusConnect AI Assistant. I can help you check class timetables, attendance status, pending assignment deadlines, exam dates, library books, and campus events. What would you like to know?";
             }
         }
 

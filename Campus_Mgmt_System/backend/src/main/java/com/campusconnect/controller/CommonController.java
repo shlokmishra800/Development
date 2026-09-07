@@ -56,8 +56,16 @@ public class CommonController {
 
     @PostMapping("/ai-chatbot")
     public ResponseEntity<Map<String, String>> aiChatbot(
-            @RequestParam String prompt,
+            @RequestParam(required = false) String prompt,
+            @RequestBody(required = false) Map<String, String> body,
             @RequestParam(required = false, defaultValue = "STUDENT") String role) {
-        return ResponseEntity.ok(commonService.getAiChatbotResponse(prompt, role));
+        String finalPrompt = prompt;
+        if ((finalPrompt == null || finalPrompt.trim().isEmpty()) && body != null && body.containsKey("prompt")) {
+            finalPrompt = body.get("prompt");
+        }
+        if (finalPrompt == null) {
+            finalPrompt = "";
+        }
+        return ResponseEntity.ok(commonService.getAiChatbotResponse(finalPrompt, role));
     }
 }

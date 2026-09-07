@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Sparkles, User, Minimize2 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -12,6 +12,17 @@ const CampusAiChatbot = () => {
     }
   ]);
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [messages, isOpen]);
 
   const quickPrompts = [
     'When is my next class?',
@@ -21,21 +32,32 @@ const CampusAiChatbot = () => {
   ];
 
   const handleSend = async (textToSend) => {
-    const prompt = textToSend || input;
-    if (!prompt.trim()) return;
+    const promptText = (typeof textToSend === 'string' ? textToSend : input).trim();
+    if (!promptText || loading) return;
 
-    const newMessages = [...messages, { sender: 'user', text: prompt }];
-    setMessages(newMessages);
-    if (!textToSend) setInput('');
+    setInput('');
+    const userMsg = { sender: 'user', text: promptText };
+    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const response = await api.post(`/public/ai-chatbot?prompt=${encodeURIComponent(prompt)}`);
-      setMessages([...newMessages, { sender: 'bot', text: response.data.reply }]);
+      // Send via both query param and body payload for complete API compatibility
+      const response = await api.post(`/public/ai-chatbot?prompt=${encodeURIComponent(promptText)}`, {
+        prompt: promptText
+      });
+      const botReply =
+        response.data?.reply ||
+        response.data?.message ||
+        'I am currently operating in basic guidance mode. How else can I help you today?';
+      setMessages((prev) => [...prev, { sender: 'bot', text: botReply }]);
     } catch (err) {
-      setMessages([
-        ...newMessages,
-        { sender: 'bot', text: 'Sorry, I am having trouble connecting to the campus server right now. Please try again shortly.' }
+      console.error('Campus AI Chatbot connection error:', err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'bot',
+          text: 'Sorry, I am having trouble connecting to the campus server right now. Please check server logs or try again shortly.'
+        }
       ]);
     } finally {
       setLoading(false);
@@ -87,8 +109,9 @@ const CampusAiChatbot = () => {
             {quickPrompts.map((qp, idx) => (
               <button
                 key={idx}
+                disabled={loading}
                 onClick={() => handleSend(qp)}
-                className="px-2.5 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 whitespace-nowrap hover:border-emerald-500 transition-colors shrink-0"
+                className="px-2.5 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 whitespace-nowrap hover:border-emerald-500 transition-colors shrink-0 disabled:opacity-50"
               >
                 {qp}
               </button>
@@ -124,10 +147,11 @@ const CampusAiChatbot = () => {
             ))}
             {loading && (
               <div className="flex items-center gap-2 text-zinc-400 italic">
-                <Bot className="w-4 h-4 animate-bounce" />
+                <Bot className="w-4 h-4 animate-bounce text-emerald-500" />
                 <span>Thinking...</span>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Form */}
