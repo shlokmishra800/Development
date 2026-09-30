@@ -145,46 +145,46 @@ export const INITIAL_COMPLAINTS = [
 export const SMART_BINS = [
   {
     id: "BIN-101",
-    name: "Central Metro Smart Bin (Recyclables)",
+    name: "Yashoda Nagar Main Market Smart Bin",
     binType: "RECYCLABLE",
     fillPercentage: 88,
     isAvailable: true,
-    latitude: 28.6210,
-    longitude: 77.2150,
-    address: "Exit Gate 2, Metro Station",
+    latitude: 26.4503,
+    longitude: 80.3176,
+    address: "Yashoda Nagar Main Market Road, Kanpur",
     lastEmptied: "4 hours ago"
   },
   {
     id: "BIN-102",
-    name: "City Park Organic Hub Bin",
+    name: "Kidwai Nagar By-Pass Smart Bin",
     binType: "ORGANIC",
     fillPercentage: 42,
     isAvailable: true,
-    latitude: 28.6139,
-    longitude: 77.2090,
-    address: "North Lawn, City Park",
+    latitude: 26.4420,
+    longitude: 80.3250,
+    address: "Kidwai Nagar By-Pass Junction, Kanpur",
     lastEmptied: "1 hour ago"
   },
   {
     id: "BIN-103",
-    name: "Tech Hub E-Waste Drop Box",
+    name: "Barra Bypass E-Waste Drop Box",
     binType: "E_WASTE",
     fillPercentage: 95,
     isAvailable: false, // FULL!
-    latitude: 28.6050,
-    longitude: 77.1980,
-    address: "Cyber Tower Entrance",
+    latitude: 26.4380,
+    longitude: 80.3050,
+    address: "Barra Bypass Gate 2, Kanpur",
     lastEmptied: "Yesterday"
   },
   {
     id: "BIN-104",
-    name: "Community Mall Hazard Safe Bin",
+    name: "Yashoda Nagar Sector A Hazard Safe Bin",
     binType: "HAZARD",
     fillPercentage: 25,
     isAvailable: true,
-    latitude: 28.6280,
-    longitude: 77.2210,
-    address: "Lower Ground Parking B2",
+    latitude: 26.4540,
+    longitude: 80.3120,
+    address: "Yashoda Nagar Block A Park, Kanpur",
     lastEmptied: "2 hours ago"
   }
 ];

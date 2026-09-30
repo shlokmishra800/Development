@@ -42,21 +42,26 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return { km, meters, formatted: `${km.toFixed(1)}km` };
 }
 
-export default function LocationFinderTab({ smartBins, onEmptyBin }) {
+export default function LocationFinderTab({ smartBins, onEmptyBin, userRole }) {
   const [filterType, setFilterType] = useState('ALL');
   const [selectedBin, setSelectedBin] = useState(smartBins[0] || null);
 
-  // Live GPS User Location State
+  // Live GPS User Location State (Defaulted to Kanpur Yashoda Nagar)
   const [userGps, setUserGps] = useState({
-    latitude: 28.6139,
-    longitude: 77.2090,
+    latitude: 26.4503,
+    longitude: 80.3176,
     isLive: false,
     accuracy: null,
-    statusText: 'Default Grid Location (Sector 14)'
+    statusText: 'Kanpur, Yashoda Nagar Locality'
   });
 
   const [isLocating, setIsLocating] = useState(false);
   const [gpsError, setGpsError] = useState(null);
+
+  // Auto acquire browser live GPS position on mount
+  useEffect(() => {
+    handleAcquireLiveGps();
+  }, []);
 
   // Function to acquire real live GPS position via browser Geolocation API
   const handleAcquireLiveGps = () => {
@@ -77,14 +82,14 @@ export default function LocationFinderTab({ smartBins, onEmptyBin }) {
           longitude,
           isLive: true,
           accuracy: Math.round(accuracy),
-          statusText: `Live GPS Locked (±${Math.round(accuracy)}m accuracy)`
+          statusText: `Live GPS Locked: Lat ${latitude.toFixed(4)}, Lng ${longitude.toFixed(4)}`
         });
         setIsLocating(false);
       },
       (error) => {
         let msg = 'Failed to retrieve live location.';
         if (error.code === error.PERMISSION_DENIED) {
-          msg = 'GPS permission denied. Using default Sector 14 coords.';
+          msg = 'GPS permission denied. Showing Kanpur Yashoda Nagar grid.';
         } else if (error.code === error.POSITION_UNAVAILABLE) {
           msg = 'GPS position unavailable.';
         } else if (error.code === error.TIMEOUT) {
@@ -97,37 +102,37 @@ export default function LocationFinderTab({ smartBins, onEmptyBin }) {
     );
   };
 
-  // Dynamic Garbage Collectors fleet data with live distances
+  // Dynamic Kanpur / Yashoda Nagar Garbage Collectors fleet data with live distances
   const collectorsList = [
     {
       id: 'COL-01',
       name: 'Officer Rajesh Kumar',
-      vehicleId: 'TRUCK-04 (Heavy Compactor)',
+      vehicleId: 'UP-78 (Kanpur Heavy Compactor Truck)',
       phone: '+91 98765-43210',
       status: 'ON_ROUTE',
-      locality: 'Sector 14 Main Road',
-      latitude: 28.6145,
-      longitude: 77.2095
+      locality: 'Yashoda Nagar Main Road, Kanpur',
+      latitude: 26.4510,
+      longitude: 80.3180
     },
     {
       id: 'COL-02',
       name: 'Officer Vikram Singh',
-      vehicleId: 'VAN-02 (HazMat & E-Waste Specialist)',
+      vehicleId: 'UP-78 (HazMat & E-Waste Truck)',
       phone: '+91 98123-45678',
       status: 'ACTIVE_DISPATCH',
-      locality: 'Block C Metro Gate',
-      latitude: 28.6160,
-      longitude: 77.2115
+      locality: 'Yashoda Nagar Block B, Kanpur',
+      latitude: 26.4480,
+      longitude: 80.3160
     },
     {
       id: 'COL-03',
       name: 'Officer Sunita Sharma',
-      vehicleId: 'EV-TRUCK-01 (Eco Electric Vehicle)',
+      vehicleId: 'Kanpur Nagar Nigam (EV Eco Truck)',
       phone: '+91 98999-11223',
       status: 'AVAILABLE',
-      locality: 'Market Complex Phase 1',
-      latitude: 28.6120,
-      longitude: 77.2070
+      locality: 'Kidwai Nagar Bypass Road, Kanpur',
+      latitude: 26.4530,
+      longitude: 80.3200
     }
   ];
 
@@ -407,14 +412,14 @@ export default function LocationFinderTab({ smartBins, onEmptyBin }) {
                   <ExternalLink className="w-3.5 h-3.5 ml-1" />
                 </button>
 
-                {onEmptyBin && (
+                {(userRole === 'COLLECTOR' || userRole === 'ADMIN') && onEmptyBin && (
                   <button
                     type="button"
                     onClick={() => onEmptyBin(selectedBin.id)}
-                    className="w-full py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-slate-700 text-xs font-semibold flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 text-xs font-semibold flex items-center justify-center gap-2"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Simulate Servicing / Emptying Smart Bin</span>
+                    <span>Officer Action: Servicing / Empty Smart Bin</span>
                   </button>
                 )}
               </div>

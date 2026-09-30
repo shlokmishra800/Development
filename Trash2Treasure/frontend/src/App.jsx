@@ -391,7 +391,7 @@ export default function App() {
 
         {/* Tab Render Switch */}
         {activeTab === 'REPORT' && (
-          <ReportWasteTab onSubmitComplaint={handleAddComplaint} isOffline={isOffline} />
+          <ReportWasteTab onSubmitComplaint={handleAddComplaint} isOffline={isOffline} user={user} />
         )}
 
         {activeTab === 'TRACKING' && (
@@ -399,6 +399,7 @@ export default function App() {
             complaints={complaints}
             onUpdateStatus={handleUpdateComplaintStatus}
             userRole={user.role}
+            user={user}
           />
         )}
 

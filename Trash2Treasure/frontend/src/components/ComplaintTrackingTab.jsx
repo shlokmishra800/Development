@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
 import { Clock, CheckCircle2, AlertTriangle, ShieldCheck, MapPin, User, Phone, Image as ImageIcon, ChevronRight, Filter, ShieldAlert } from 'lucide-react';
 
-export default function ComplaintTrackingTab({ complaints, onUpdateStatus, userRole }) {
+export default function ComplaintTrackingTab({ complaints, onUpdateStatus, userRole, user }) {
   const [filter, setFilter] = useState('ALL');
-  const [selectedComplaint, setSelectedComplaint] = useState(complaints[0] || null);
 
-  const filteredComplaints = complaints.filter(c => {
+  const userComplaints = complaints.filter(c => {
+    if (userRole === 'CITIZEN') {
+      if (user?.email) {
+        return (c.citizenEmail && c.citizenEmail.toLowerCase() === user.email.toLowerCase()) ||
+               (c.citizenId && c.citizenId === user.id) ||
+               (c.citizenName && c.citizenName.toLowerCase() === user.name?.toLowerCase());
+      }
+    }
+    return true;
+  });
+
+  const [selectedComplaint, setSelectedComplaint] = useState(userComplaints[0] || null);
+
+  const filteredComplaints = userComplaints.filter(c => {
     if (filter === 'IN_PROGRESS') return c.status === 'SUBMITTED' || c.status === 'ASSIGNED' || c.status === 'IN_PROGRESS';
     if (filter === 'RESOLVED') return c.status === 'RESOLVED';
     if (filter === 'HAZARD') return c.severity === 'EMERGENCY' || c.category === 'HAZARD';

@@ -19,14 +19,14 @@ import {
   LocateFixed
 } from 'lucide-react';
 
-export default function ReportWasteTab({ onSubmitComplaint, isOffline }) {
+export default function ReportWasteTab({ onSubmitComplaint, isOffline, user }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('RECYCLABLE');
   const [severity, setSeverity] = useState('MEDIUM');
   const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('Market Road, Sector 14, Near Community Center');
-  const [latitude, setLatitude] = useState(28.6139);
-  const [longitude, setLongitude] = useState(77.2090);
+  const [address, setAddress] = useState('Yashoda Nagar Main Market Road, Kanpur');
+  const [latitude, setLatitude] = useState(26.4503);
+  const [longitude, setLongitude] = useState(80.3176);
   const [isHazard, setIsHazard] = useState(false);
 
   // Photo state
@@ -145,7 +145,9 @@ export default function ReportWasteTab({ onSubmitComplaint, isOffline }) {
 
     const newReport = {
       id: `T2T-${Math.floor(1000 + Math.random() * 9000)}`,
-      citizenName: 'Aarav Sharma',
+      citizenName: user?.name || 'Eco Citizen',
+      citizenEmail: user?.email || 'citizen@t2t.org',
+      citizenId: user?.id || `usr-${Date.now()}`,
       title,
       category,
       severity: isHazard ? 'EMERGENCY' : severity,
