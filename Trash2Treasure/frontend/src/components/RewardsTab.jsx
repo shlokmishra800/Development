@@ -33,7 +33,10 @@ export default function RewardsTab({ user, rewardsStore, leaderboard, onRedeemRe
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
-  const targetPercentage = Math.min(100, Math.round((user.recycledThisMonthKg / user.monthlyTargetKg) * 100));
+  const targetPercentage = Math.min(
+    100,
+    Math.round(((user?.recycledThisMonthKg || 0) / (user?.monthlyTargetKg || 50)) * 100)
+  );
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -48,12 +51,12 @@ export default function RewardsTab({ user, rewardsStore, leaderboard, onRedeemRe
               <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" /> Eco-Rewards Hub
               </span>
-              <span className="text-xs text-slate-400">Sector 14 Locality</span>
+              <span className="text-xs text-slate-400">{user?.locality || 'Sector 14 Locality'}</span>
             </div>
 
             <div className="flex items-baseline gap-3">
               <span className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
-                {user.ecoPoints}
+                {user?.ecoPoints ?? 0}
               </span>
               <span className="text-sm font-bold text-slate-300">Available Eco-Points</span>
             </div>
@@ -65,7 +68,7 @@ export default function RewardsTab({ user, rewardsStore, leaderboard, onRedeemRe
           {/* Monthly Recycling Progress Bar */}
           <div className="mt-6 pt-4 border-t border-slate-800 space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 font-semibold">Monthly Target ({user.recycledThisMonthKg}kg / {user.monthlyTargetKg}kg)</span>
+              <span className="text-slate-300 font-semibold">Monthly Target ({user?.recycledThisMonthKg || 0}kg / {user?.monthlyTargetKg || 50}kg)</span>
               <span className="text-emerald-400 font-mono font-bold">{targetPercentage}% Reached</span>
             </div>
             <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800 p-0.5">
@@ -85,7 +88,7 @@ export default function RewardsTab({ user, rewardsStore, leaderboard, onRedeemRe
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
-            {user.badges.map((badge, idx) => (
+            {(user?.badges || ['Eco Champion', 'Zero Waste Novice']).map((badge, idx) => (
               <div
                 key={idx}
                 className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs font-semibold text-slate-200 flex items-center gap-2 hover:border-amber-500/40 transition-colors"

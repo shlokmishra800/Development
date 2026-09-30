@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LandingAuthGate from './components/LandingAuthGate';
+import AuthModal from './components/AuthModal';
 import Navbar from './components/Navbar';
 import ReportWasteTab from './components/ReportWasteTab';
 import ComplaintTrackingTab from './components/ComplaintTrackingTab';
@@ -70,6 +71,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('REPORT');
   const [isOffline, setIsOffline] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [authRoleModalTarget, setAuthRoleModalTarget] = useState(null);
   const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
   const [smartBins, setSmartBins] = useState(SMART_BINS);
   const [pickupRequests, setPickupRequests] = useState(DOORSTEP_PICKUP_REQUESTS);
@@ -287,6 +289,7 @@ export default function App() {
         setNotifications={setNotifications}
         onOpenAuth={handleLogout}
         onOpenProfile={() => setShowProfileModal(true)}
+        onRequireRoleAuth={(targetRole) => setAuthRoleModalTarget(targetRole)}
       />
 
       {/* Role-Specific Filtered Tab Navigation Bar */}
@@ -427,7 +430,11 @@ export default function App() {
         )}
 
         {activeTab === 'COLLECTOR_PICKUPS' && (
-          <CollectorMarketplaceTab pickupRequests={pickupRequests} />
+          <CollectorMarketplaceTab
+            pickupRequests={pickupRequests}
+            complaints={complaints}
+            onUpdateStatus={handleUpdateComplaintStatus}
+          />
         )}
 
         {activeTab === 'ADMIN_GOVERNANCE' && (
@@ -450,6 +457,19 @@ export default function App() {
           user={user}
           setUser={setUser}
           onClose={() => setShowProfileModal(false)}
+        />
+      )}
+
+      {/* Role Switch Security Auth Modal */}
+      {authRoleModalTarget && (
+        <AuthModal
+          isOpen={!!authRoleModalTarget}
+          onClose={() => setAuthRoleModalTarget(null)}
+          initialRole={authRoleModalTarget}
+          onLoginSuccess={(authenticatedUser) => {
+            setAuthRoleModalTarget(null);
+            handleLoginSuccess(authenticatedUser);
+          }}
         />
       )}
 

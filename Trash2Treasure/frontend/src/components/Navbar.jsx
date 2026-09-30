@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { Leaf, Bell, Wifi, WifiOff, ShieldCheck, UserCheck, Truck, Sparkles, CheckCircle2, AlertTriangle, LogIn, LogOut } from 'lucide-react';
 
-export default function Navbar({ user, setUser, isOffline, setIsOffline, notifications, setNotifications, onOpenAuth, onOpenProfile }) {
+export default function Navbar({ user, setUser, isOffline, setIsOffline, notifications, setNotifications, onOpenAuth, onOpenProfile, onRequireRoleAuth }) {
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const handleRoleClick = (targetRole) => {
+    if (user.role === targetRole) return;
+    if (onRequireRoleAuth) {
+      onRequireRoleAuth(targetRole);
+    } else {
+      onOpenAuth();
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -77,10 +86,10 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
             )}
           </button>
 
-          {/* Quick Role Switcher Pills */}
+          {/* Quick Role Switcher Pills (Requires Authentication!) */}
           <div className="bg-slate-900/80 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs">
             <button
-              onClick={() => setUser({ ...user, role: 'CITIZEN' })}
+              onClick={() => handleRoleClick('CITIZEN')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
                 user.role === 'CITIZEN'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
@@ -91,7 +100,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
               <span className="hidden sm:inline">Citizen</span>
             </button>
             <button
-              onClick={() => setUser({ ...user, role: 'COLLECTOR' })}
+              onClick={() => handleRoleClick('COLLECTOR')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
                 user.role === 'COLLECTOR'
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold shadow-md shadow-amber-500/20'
@@ -99,10 +108,10 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
               }`}
             >
               <Truck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Collector</span>
+              <span className="hidden sm:inline">Collector (🔒)</span>
             </button>
             <button
-              onClick={() => setUser({ ...user, role: 'ADMIN' })}
+              onClick={() => handleRoleClick('ADMIN')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
                 user.role === 'ADMIN'
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-md shadow-cyan-500/20'
@@ -110,7 +119,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Admin</span>
+              <span className="hidden sm:inline">Admin (🔒)</span>
             </button>
           </div>
         </div>

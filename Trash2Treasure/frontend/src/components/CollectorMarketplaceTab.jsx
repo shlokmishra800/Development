@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Truck, CheckCircle2, IndianRupee, Scale, Clock, MapPin, AlertCircle, ShoppingBag } from 'lucide-react';
+import { Truck, CheckCircle2, IndianRupee, Scale, Clock, MapPin, AlertCircle, ShoppingBag, Camera, AlertOctagon } from 'lucide-react';
 import { MARKETPLACE_ITEMS } from '../mockData';
 
-export default function CollectorMarketplaceTab({ pickupRequests, onApprovePickup }) {
+export default function CollectorMarketplaceTab({ pickupRequests, onApprovePickup, complaints = [], onUpdateStatus }) {
   const [requests, setRequests] = useState(pickupRequests);
 
   const handleApprove = (reqId) => {
@@ -22,16 +22,104 @@ export default function CollectorMarketplaceTab({ pickupRequests, onApprovePicku
             <Truck className="w-3.5 h-3.5" /> Sanitation Officer Duty Portal
           </div>
           <h2 className="text-2xl font-bold text-slate-100">
-            Doorstep Eco-Pickup & Recycling Evaluation
+            Collector Dispatch & Citizen Waste Request Hub
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            Evaluate scrap materials (Paper, Plastic, Metal, E-Waste) requested by citizens. Verify scrap weight and credit cash payouts (₹) & Eco-Points.
+            View live citizen dumping reports with exact GPS locations, evaluate scrap materials for doorstep pickup, and record cleanup proof.
           </p>
         </div>
 
         <div className="px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
-          <span className="text-amber-400 font-bold block">{requests.filter(r => r.status !== 'PICKED_UP').length} Pickups Pending</span>
+          <span className="text-amber-400 font-bold block">
+            {complaints.filter(c => c.status !== 'RESOLVED').length} Incident Reports Active
+          </span>
           <span>Assigned Fleet Truck #04</span>
+        </div>
+      </div>
+
+      {/* Live Citizen Reported Waste Incidents (Location Highlighted) */}
+      <div className="space-y-4">
+        <h3 className="text-base font-bold text-slate-100 flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Camera className="w-4 h-4 text-emerald-400" />
+            <span>📍 Live Citizen Waste Incidents & Pickup Locations</span>
+          </span>
+          <span className="text-xs text-emerald-400 font-mono font-bold">
+            {complaints.filter(c => c.status !== 'RESOLVED').length} Pending Cleanups
+          </span>
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {complaints.map((c) => {
+            const isResolved = c.status === 'RESOLVED';
+            return (
+              <div
+                key={c.id}
+                className={`glass-card rounded-3xl p-5 border space-y-3 transition-all ${
+                  isResolved
+                    ? 'bg-slate-950/60 border-emerald-500/30 opacity-80'
+                    : c.severity === 'EMERGENCY'
+                    ? 'bg-rose-950/30 border-rose-500/60 ring-1 ring-rose-500/40'
+                    : 'border-slate-800 hover:border-amber-500/40'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="font-mono text-xs font-bold text-emerald-400">{c.id}</span>
+                    <h4 className="font-bold text-slate-100 text-sm mt-0.5">{c.title}</h4>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    isResolved
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : c.severity === 'EMERGENCY'
+                      ? 'bg-rose-500/20 text-rose-300 animate-pulse'
+                      : 'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    {isResolved ? '✓ RESOLVED' : c.severity === 'EMERGENCY' ? '🚨 EMERGENCY' : '🚚 ACTIVE REPORT'}
+                  </span>
+                </div>
+
+                {/* Exact Location Box */}
+                <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
+                    <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Exact Location: {c.address}</span>
+                  </div>
+                  {(c.latitude || c.longitude) && (
+                    <p className="text-[11px] text-slate-400 font-mono pl-5">
+                      GPS Coords: {c.latitude || 28.6139}, {c.longitude || 77.2090}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-slate-300 pl-5">
+                    Reported by Citizen: <strong>{c.citizenName || 'Aarav Sharma'}</strong>
+                  </p>
+                </div>
+
+                {/* Photo & Description */}
+                <div className="flex items-center gap-3">
+                  {c.imageUrl && (
+                    <img
+                      src={c.imageUrl}
+                      alt={c.title}
+                      className="w-16 h-16 rounded-xl object-cover border border-slate-700 shrink-0"
+                    />
+                  )}
+                  <p className="text-xs text-slate-400 line-clamp-2">{c.description || 'Waste reported at street junction requiring sanitation squad dispatch.'}</p>
+                </div>
+
+                {/* Action button */}
+                {!isResolved && onUpdateStatus && (
+                  <button
+                    onClick={() => onUpdateStatus(c.id, 'RESOLVED', 'https://images.unsplash.com/photo-1604186837056-8e7c286756f2?w=600&auto=format&fit=crop&q=80')}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-extrabold text-xs shadow-md flex items-center justify-center gap-2 hover:brightness-110"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Dispatch Fleet & Mark Cleaned (Location Verified)</span>
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

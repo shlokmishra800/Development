@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Leaf, User, Truck, ShieldCheck, Mail, Lock, Sparkles, MapPin, Phone, Key, ArrowRight, CheckCircle2, Shield, Award, AlertCircle } from 'lucide-react';
 import * as api from '../api';
 
-export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
+export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole = 'CITIZEN' }) {
   const [mode, setMode] = useState('LOGIN'); // 'LOGIN' or 'SIGNUP'
-  const [role, setRole] = useState('CITIZEN'); // 'CITIZEN', 'COLLECTOR', 'ADMIN'
+  const [role, setRole] = useState(initialRole); // 'CITIZEN', 'COLLECTOR', 'ADMIN'
+
+  useEffect(() => {
+    if (initialRole) setRole(initialRole);
+  }, [initialRole]);
 
   // Common fields
   const [email, setEmail] = useState('');

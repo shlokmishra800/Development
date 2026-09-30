@@ -97,6 +97,50 @@ export default function LocationFinderTab({ smartBins, onEmptyBin }) {
     );
   };
 
+  // Dynamic Garbage Collectors fleet data with live distances
+  const collectorsList = [
+    {
+      id: 'COL-01',
+      name: 'Officer Rajesh Kumar',
+      vehicleId: 'TRUCK-04 (Heavy Compactor)',
+      phone: '+91 98765-43210',
+      status: 'ON_ROUTE',
+      locality: 'Sector 14 Main Road',
+      latitude: 28.6145,
+      longitude: 77.2095
+    },
+    {
+      id: 'COL-02',
+      name: 'Officer Vikram Singh',
+      vehicleId: 'VAN-02 (HazMat & E-Waste Specialist)',
+      phone: '+91 98123-45678',
+      status: 'ACTIVE_DISPATCH',
+      locality: 'Block C Metro Gate',
+      latitude: 28.6160,
+      longitude: 77.2115
+    },
+    {
+      id: 'COL-03',
+      name: 'Officer Sunita Sharma',
+      vehicleId: 'EV-TRUCK-01 (Eco Electric Vehicle)',
+      phone: '+91 98999-11223',
+      status: 'AVAILABLE',
+      locality: 'Market Complex Phase 1',
+      latitude: 28.6120,
+      longitude: 77.2070
+    }
+  ];
+
+  const collectorsWithDistance = collectorsList.map(c => {
+    const dist = calculateDistance(
+      userGps.latitude,
+      userGps.longitude,
+      c.latitude,
+      c.longitude
+    );
+    return { ...c, distanceInfo: dist };
+  }).sort((a, b) => a.distanceInfo.meters - b.distanceInfo.meters);
+
   // Compute live dynamic distances to all smart bins
   const binsWithDistance = smartBins.map(bin => {
     const dist = calculateDistance(
@@ -388,7 +432,7 @@ export default function LocationFinderTab({ smartBins, onEmptyBin }) {
               <span>Nearby Bins (Sorted by Proximity)</span>
               <span className="text-emerald-400">{filteredBins.length} Bins</span>
             </h4>
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
               {filteredBins.map((b) => (
                 <div
                   key={b.id}
@@ -418,6 +462,46 @@ export default function LocationFinderTab({ smartBins, onEmptyBin }) {
                       </p>
                     )}
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* List of Nearest Garbage Collectors & Eco Trucks */}
+          <div className="space-y-2 pt-2 border-t border-slate-800">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 px-1 flex items-center justify-between">
+              <span className="text-amber-400 font-bold flex items-center gap-1.5">
+                🚚 Nearest Garbage Collectors ({collectorsWithDistance.length})
+              </span>
+              <span className="text-[10px] text-amber-300">Live GPS Fleet</span>
+            </h4>
+            
+            <div className="space-y-2">
+              {collectorsWithDistance.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-3 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/30 flex items-center justify-between text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-sm">
+                      🚚
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-100">{c.name}</p>
+                      <p className="text-[10px] text-slate-400">{c.vehicleId} • {c.locality}</p>
+                      <p className="text-[10px] text-emerald-400 font-mono font-bold mt-0.5">
+                        📍 {c.distanceInfo.formatted} away from you
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => alert(`Calling Garbage Collector ${c.name}: ${c.phone}`)}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-[11px] font-bold flex items-center gap-1"
+                  >
+                    📞 Call Collector
+                  </button>
                 </div>
               ))}
             </div>

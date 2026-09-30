@@ -170,22 +170,33 @@ export default function ReportWasteTab({ onSubmitComplaint, isOffline }) {
     setAiDetected(null);
   };
 
-  const handleSimulateGPS = () => {
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
+
+  const handleAcquireLiveGps = () => {
+    setIsLocatingGps(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setLatitude(+pos.coords.latitude.toFixed(4));
-          setLongitude(+pos.coords.longitude.toFixed(4));
-          setAddress(`Live GPS Locked (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
-        },
-        () => {
-          const lat = +(28.6 + Math.random() * 0.05).toFixed(4);
-          const lng = +(77.2 + Math.random() * 0.05).toFixed(4);
+          const lat = +pos.coords.latitude.toFixed(4);
+          const lng = +pos.coords.longitude.toFixed(4);
           setLatitude(lat);
           setLongitude(lng);
-          setAddress(`Geotagged Spot #${Math.floor(10 + Math.random() * 90)}, Sector 14`);
-        }
+          setAddress(`Live GPS Locked: Lat ${lat}, Lng ${lng} (Sector 14 Area)`);
+          setIsLocatingGps(false);
+        },
+        (err) => {
+          console.warn('Geolocation fallback:', err);
+          const lat = +(28.6139 + (Math.random() - 0.5) * 0.01).toFixed(4);
+          const lng = +(77.2090 + (Math.random() - 0.5) * 0.01).toFixed(4);
+          setLatitude(lat);
+          setLongitude(lng);
+          setAddress(`Geotagged Incident Spot (Lat ${lat}, Lng ${lng}), Sector 14`);
+          setIsLocatingGps(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
+    } else {
+      setIsLocatingGps(false);
     }
   };
 
@@ -529,11 +540,12 @@ export default function ReportWasteTab({ onSubmitComplaint, isOffline }) {
             </div>
             <button
               type="button"
-              onClick={handleSimulateGPS}
-              className="text-xs text-emerald-400 hover:underline font-medium flex items-center gap-1"
+              onClick={handleAcquireLiveGps}
+              disabled={isLocatingGps}
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/30"
             >
-              <LocateFixed className="w-3.5 h-3.5" />
-              <span>Acquire Live GPS</span>
+              <LocateFixed className={`w-4 h-4 ${isLocatingGps ? 'animate-spin' : ''}`} />
+              <span>{isLocatingGps ? 'Locking Live GPS...' : '📍 Auto-Fetch Live Location'}</span>
             </button>
           </div>
 
