@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LandingAuthGate from './components/LandingAuthGate';
 import AuthModal from './components/AuthModal';
+import FeedbackModal from './components/FeedbackModal';
 import Navbar from './components/Navbar';
 import ReportWasteTab from './components/ReportWasteTab';
 import ComplaintTrackingTab from './components/ComplaintTrackingTab';
@@ -71,6 +72,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('REPORT');
   const [isOffline, setIsOffline] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [authRoleModalTarget, setAuthRoleModalTarget] = useState(null);
   const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
   const [smartBins, setSmartBins] = useState(SMART_BINS);
@@ -290,6 +292,7 @@ export default function App() {
         onOpenAuth={handleLogout}
         onOpenProfile={() => setShowProfileModal(true)}
         onRequireRoleAuth={(targetRole) => setAuthRoleModalTarget(targetRole)}
+        onOpenFeedback={() => setShowFeedbackModal(true)}
       />
 
       {/* Role-Specific Filtered Tab Navigation Bar */}
@@ -457,6 +460,15 @@ export default function App() {
           user={user}
           setUser={setUser}
           onClose={() => setShowProfileModal(false)}
+        />
+      )}
+
+      {/* Feedback Security Auth Modal */}
+      {showFeedbackModal && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          user={user}
         />
       )}
 

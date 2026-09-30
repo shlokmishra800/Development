@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Leaf, Bell, Wifi, WifiOff, ShieldCheck, UserCheck, Truck, Sparkles, CheckCircle2, AlertTriangle, LogIn, LogOut } from 'lucide-react';
+import { Leaf, Bell, Wifi, WifiOff, ShieldCheck, UserCheck, Truck, Sparkles, CheckCircle2, AlertTriangle, LogIn, LogOut, MessageSquarePlus } from 'lucide-react';
 
-export default function Navbar({ user, setUser, isOffline, setIsOffline, notifications, setNotifications, onOpenAuth, onOpenProfile, onRequireRoleAuth }) {
+export default function Navbar({ user, setUser, isOffline, setIsOffline, notifications, setNotifications, onOpenAuth, onOpenProfile, onRequireRoleAuth, onOpenFeedback }) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const handleRoleClick = (targetRole) => {
@@ -124,9 +124,19 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
           </div>
         </div>
 
-        {/* Right Section: Eco Points, Auth Modal Button, Notifications, Profile */}
-        <div className="flex items-center gap-3">
+        {/* Right Section: Eco Points, Feedback, Auth Modal Button, Notifications, Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
           
+          {/* Admin Feedback Button */}
+          <button
+            onClick={onOpenFeedback}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center gap-1.5 transition-all"
+            title="Send direct feedback to Admin's Gmail & MongoDB"
+          >
+            <MessageSquarePlus className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden md:inline">Feedback</span>
+          </button>
+
           {/* Auth Portal Button */}
           <button
             onClick={onOpenAuth}

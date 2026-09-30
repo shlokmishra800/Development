@@ -1,7 +1,6 @@
 // Centralized REST API Service for Trash2Treasure (T2T)
-// Connects React Frontend directly to Spring Boot Backend at http://localhost:8080/api
-
-const API_BASE_URL = 'http://localhost:8080/api';
+// Connects React Frontend to Spring Boot Backend
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // Helper for safe fetch calls with automatic backend fallback
 async function apiRequest(endpoint, options = {}) {
@@ -73,3 +72,11 @@ export const createReward = async (rewardData) => apiRequest('/rewards', {
 
 // 5. City Analytics Summary API
 export const fetchAnalyticsSummary = async () => apiRequest('/analytics/summary');
+
+// 6. User Feedback APIs (Saved to MongoDB Atlas)
+export const submitFeedback = async (feedbackData) => apiRequest('/feedbacks', {
+  method: 'POST',
+  body: JSON.stringify(feedbackData),
+});
+export const fetchFeedbacks = async () => apiRequest('/feedbacks');
+
