@@ -236,11 +236,15 @@ export default function App() {
         id: Date.now() + 1,
         type: 'HAZARD',
         title: `🚨 EMERGENCY HAZARD DISPATCHED: #${newReport.id}`,
-        message: `⚡ Citizen "${newReport.citizenName}" reported an EMERGENCY HAZARD at "${newReport.address}". Image attached! Immediate HazMat response required.`,
+        message: `⚡ Citizen "${newReport.citizenName}" reported an EMERGENCY HAZARD at "${newReport.address}". Live GPS: Lat ${newReport.latitude || 28.6139}, Lng ${newReport.longitude || 77.2090}. Immediate HazMat response required.`,
         time: 'Just now',
         read: false,
         complaintId: newReport.id,
         imageUrl: newReport.imageUrl,
+        address: newReport.address,
+        latitude: newReport.latitude || 28.6139,
+        longitude: newReport.longitude || 77.2090,
+        citizenName: newReport.citizenName,
         isEmergency: true
       };
       setNotifications(prev => [adminEmergencyNotif, citizenNotif, ...prev]);
@@ -451,32 +455,55 @@ export default function App() {
         )}
 
         {/* Admin Live Emergency Hazard Dispatch Banner */}
-        {user?.role === 'ADMIN' && notifications.some(n => n.type === 'HAZARD' && !n.read) && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 border-2 border-rose-500 text-rose-100 text-xs flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl shadow-rose-600/30 animate-pulse">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-400 text-rose-400 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6" />
+        {user?.role === 'ADMIN' && notifications.some(n => n.type === 'HAZARD' && !n.read) && (() => {
+          const activeNotif = notifications.find(n => n.type === 'HAZARD' && !n.read);
+          const lat = activeNotif?.latitude || 28.6139;
+          const lng = activeNotif?.longitude || 77.2090;
+          return (
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 border-2 border-rose-500 text-rose-100 text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xl shadow-rose-600/30 animate-pulse">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-400 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="font-extrabold text-sm text-rose-200 uppercase tracking-wider flex items-center gap-2">
+                    <span>🚨 HIGH-PRIORITY EMERGENCY HAZARD REPORTED!</span>
+                  </p>
+                  <p className="text-slate-200 text-xs font-semibold">
+                    {activeNotif?.message}
+                  </p>
+                  
+                  {/* Location & Google Maps Geotag Badges */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="bg-rose-500/20 px-2.5 py-1 rounded-xl border border-rose-500/40 text-rose-300 font-bold text-[11px] flex items-center gap-1">
+                      📍 Incident Location: {activeNotif?.address || 'Sector 14 Area'}
+                    </span>
+                    <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-700 text-cyan-300 font-mono text-[11px]">
+                      GPS: Lat {lat}, Lng {lng}
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps?q=${lat},${lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-md transition-all"
+                    >
+                      🗺️ Open Live GPS on Google Maps
+                    </a>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="font-extrabold text-sm text-rose-200 uppercase tracking-wider flex items-center gap-2">
-                  <span>🚨 HIGH-PRIORITY EMERGENCY HAZARD REPORTED!</span>
-                </p>
-                <p className="text-slate-200 mt-0.5">
-                  {notifications.find(n => n.type === 'HAZARD' && !n.read)?.message}
-                </p>
-              </div>
+              <button
+                onClick={() => {
+                  setActiveTab('TRACKING');
+                  setNotifications(prev => prev.map(n => n.type === 'HAZARD' ? { ...n, read: true } : n));
+                }}
+                className="px-4 py-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer"
+              >
+                <span>⚡ View Location & Dispatch Squad</span>
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setActiveTab('TRACKING');
-                setNotifications(prev => prev.map(n => n.type === 'HAZARD' ? { ...n, read: true } : n));
-              }}
-              className="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer"
-            >
-              <span>⚡ Respond & Dispatch Unit Now</span>
-            </button>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Active Logged In Persona Header Bar */}
         <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/80 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-md">
