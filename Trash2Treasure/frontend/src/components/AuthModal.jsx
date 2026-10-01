@@ -7,7 +7,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
   const [role, setRole] = useState(initialRole); // 'CITIZEN', 'COLLECTOR', 'ADMIN'
 
   useEffect(() => {
-    if (initialRole) setRole(initialRole);
+    if (initialRole) {
+      setRole(initialRole);
+      if (initialRole === 'ADMIN') {
+        setMode('LOGIN');
+        setEmail('shlokmishra576@gmail.com');
+        setPassword('shlok123');
+      }
+    }
   }, [initialRole]);
 
   // Common fields
@@ -37,97 +44,197 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
     if (role === 'ADMIN') avatar = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80';
 
     try {
-      if (mode === 'LOGIN') {
-        const targetEmail = email || `${role.toLowerCase()}@t2t.org`;
-        const targetPass = password || 'demo12345';
-        
-        const loginResult = await api.loginUser(targetEmail, targetPass);
+      const normalizedEmail = (email || '').toLowerCase().trim();
+      const targetPass = password || '';
 
-        if (loginResult && loginResult.email) {
+      if (!normalizedEmail) {
+        setIsLoading(false);
+        setErrorMsg('Please enter a valid email address');
+        return;
+      }
+
+      if (role === 'ADMIN' && mode === 'SIGNUP') {
+        setErrorMsg('Admin account creation is prohibited. Only pre-authorized Admin login is allowed.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (mode === 'LOGIN') {
+        // A. Special Check for Fixed Admin Credentials
+        if (role === 'ADMIN' || normalizedEmail === 'shlokmishra576@gmail.com') {
+          if (normalizedEmail !== 'shlokmishra576@gmail.com' || targetPass !== 'shlok123') {
+            setErrorMsg('Invalid Admin Credentials. Required: shlokmishra576@gmail.com / password: shlok123');
+            setIsLoading(false);
+            return;
+          }
+          const adminUser = {
+            id: 'adm-301',
+            name: 'Shlok Mishra (Admin)',
+            email: 'shlokmishra576@gmail.com',
+            password: 'shlok123',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            ecoPoints: 5000,
+            recycledThisMonthKg: 450.0,
+            monthlyTargetKg: 500.0,
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+            departmentId: 'MUN-DEPT-882'
+          };
+          setAuthSuccessMsg(true);
+          setTimeout(() => {
+            setIsLoading(false);
+            setAuthSuccessMsg(false);
+            onLoginSuccess(adminUser);
+            onClose();
+          }, 600);
+          return;
+        }
+
+        // B. Try real Spring Boot / MongoDB Atlas Login
+        const loginResult = await api.loginUser(normalizedEmail, targetPass);
+
+        if (loginResult && loginResult.email && !loginResult.error) {
           setAuthSuccessMsg(true);
           setTimeout(() => {
             setIsLoading(false);
             setAuthSuccessMsg(false);
             onLoginSuccess(loginResult);
             onClose();
-          }, 800);
+          }, 600);
           return;
         }
 
-        if (loginResult && loginResult.message) {
-          setErrorMsg(loginResult.message);
-          setIsLoading(false);
-          return;
+        if (loginResult && loginResult.error) {
+          if (loginResult.message && loginResult.message.toLowerCase().includes('password')) {
+            setErrorMsg(loginResult.message);
+            setIsLoading(false);
+            return;
+          }
         }
 
-        // Fallback for demo mode
-        const fallbackUser = {
-          id: `usr-${Math.floor(100 + Math.random() * 900)}`,
-          name: name || (role === 'CITIZEN' ? 'Aarav Sharma' : role === 'COLLECTOR' ? 'Officer Rajesh K.' : 'Director Sunita Roy'),
-          email: targetEmail,
-          role,
-          ecoPoints: role === 'CITIZEN' ? 480 : 1200,
-          monthlyTargetKg: 50.0,
-          recycledThisMonthKg: 38.5,
-          badges: role === 'CITIZEN' ? ['Eco Champion', 'Zero Waste Novice'] : ['Fleet Officer', 'Hazard Specialist'],
-          avatar,
-          locality,
-          vehicleId,
-          departmentId
-        };
-        setAuthSuccessMsg(true);
-        setTimeout(() => {
-          setIsLoading(false);
-          setAuthSuccessMsg(false);
-          onLoginSuccess(fallbackUser);
-          onClose();
-        }, 800);
+        // C. Check Local Registered Users Array
+        let registeredUsers = [];
+        try {
+          registeredUsers = JSON.parse(localStorage.getItem('t2t_registered_users') || '[]');
+        } catch (e) {}
 
-      } else {
-        // Create Real New User in MongoDB Atlas (0% initial progress!)
-        const newUserData = {
-          name: name || 'New Eco Citizen',
-          email: email || `user_${Date.now()}@t2t.org`,
-          password: password || 'pass12345',
-          role,
-          status: 'ACTIVE',
-          ecoPoints: 0,
-          recycledThisMonthKg: 0.0,
-          monthlyTargetKg: 50.0,
-          locality,
-          avatar,
-          phone,
-          vehicleId,
-          departmentId
-        };
+        const matchedLocalUser = registeredUsers.find(u => u.email.toLowerCase() === normalizedEmail);
 
-        const registerResult = await api.registerUser(newUserData);
-
-        if (registerResult && registerResult.email) {
+        if (matchedLocalUser) {
+          if (matchedLocalUser.password && targetPass && matchedLocalUser.password !== targetPass) {
+            setErrorMsg('Invalid password entered for this account.');
+            setIsLoading(false);
+            return;
+          }
           setAuthSuccessMsg(true);
           setTimeout(() => {
             setIsLoading(false);
             setAuthSuccessMsg(false);
-            onLoginSuccess(registerResult);
+            onLoginSuccess(matchedLocalUser);
             onClose();
-          }, 800);
+          }, 600);
           return;
         }
 
-        if (registerResult && registerResult.message) {
+        // D. Check Pre-Seeded Accounts
+        const preSeededUsers = [
+          {
+            id: 'col-201',
+            name: 'Officer Rajesh K.',
+            email: 'collector@t2t.org',
+            password: 'demo12345',
+            role: 'COLLECTOR',
+            ecoPoints: 1250,
+            recycledThisMonthKg: 95.0,
+            monthlyTargetKg: 100.0,
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+            vehicleId: 'FLEET-TRUCK-04'
+          }
+        ];
+
+        const matchedSeededUser = preSeededUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+        if (matchedSeededUser) {
+          if (matchedSeededUser.password && targetPass && matchedSeededUser.password !== targetPass) {
+            setErrorMsg('Invalid password entered for this account.');
+            setIsLoading(false);
+            return;
+          }
+          setAuthSuccessMsg(true);
+          setTimeout(() => {
+            setIsLoading(false);
+            setAuthSuccessMsg(false);
+            onLoginSuccess(matchedSeededUser);
+            onClose();
+          }, 600);
+          return;
+        }
+
+        setErrorMsg(`Account "${normalizedEmail}" not found. Please click "Create Account" tab to register your real profile.`);
+        setIsLoading(false);
+        return;
+
+      } else {
+        // SIGNUP / REGISTER Mode: Create Real New Account in MongoDB Atlas & Local Storage
+        if (!name.trim()) {
+          setErrorMsg('Please enter your Full Name to register.');
+          setIsLoading(false);
+          return;
+        }
+
+        const newUserData = {
+          id: `usr-${Date.now()}`,
+          name: name.trim(),
+          email: normalizedEmail,
+          password: targetPass || 'pass12345',
+          role: role || 'CITIZEN',
+          status: 'ACTIVE',
+          ecoPoints: 0,
+          recycledThisMonthKg: 0.0,
+          monthlyTargetKg: 50.0,
+          reportsCount: 0,
+          badges: ['New Eco Member'],
+          locality: locality || 'Sector 14',
+          avatar,
+          phone,
+          vehicleId,
+          departmentId,
+          createdAt: new Date().toISOString()
+        };
+
+        const registerResult = await api.registerUser(newUserData);
+
+        if (registerResult && registerResult.error) {
           setErrorMsg(registerResult.message);
           setIsLoading(false);
           return;
         }
 
-        setIsLoading(false);
-        onLoginSuccess({ ...newUserData, id: `usr-${Date.now()}` });
-        onClose();
+        const createdAccount = (registerResult && registerResult.email) ? registerResult : newUserData;
+
+        // Persist locally in registeredUsers list
+        try {
+          let registeredUsers = JSON.parse(localStorage.getItem('t2t_registered_users') || '[]');
+          const idx = registeredUsers.findIndex(u => u.email.toLowerCase() === createdAccount.email.toLowerCase());
+          if (idx >= 0) {
+            registeredUsers[idx] = createdAccount;
+          } else {
+            registeredUsers.push(createdAccount);
+          }
+          localStorage.setItem('t2t_registered_users', JSON.stringify(registeredUsers));
+        } catch (e) {}
+
+        setAuthSuccessMsg(true);
+        setTimeout(() => {
+          setIsLoading(false);
+          setAuthSuccessMsg(false);
+          onLoginSuccess(createdAccount);
+          onClose();
+        }, 600);
       }
     } catch (err) {
       console.error('Auth error:', err);
       setIsLoading(false);
-      setErrorMsg('Authentication error. Please check server logs.');
+      setErrorMsg('Authentication error. Please check server connection.');
     }
   };
 
@@ -155,7 +262,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
       badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
       btnGradient: 'from-cyan-500 to-blue-600 text-white shadow-cyan-500/20',
       iconColor: 'text-cyan-400',
-      tagline: '⚡ Admin Portal • Municipal Telemetry, Hazard Dispatch & Analytics'
+      tagline: '⚡ Admin Portal • Authorized Login Only (shlokmishra576@gmail.com)'
     }
   };
 
@@ -178,7 +285,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
               </div>
               <div>
                 <h3 className="font-extrabold text-xl tracking-tight">
-                  MongoDB Atlas Auth
+                  {role === 'ADMIN' ? 'Admin Authorized Gateway' : 'MongoDB Atlas Auth'}
                 </h3>
                 <p className="text-xs font-semibold opacity-90">{currentTheme.tagline}</p>
               </div>
@@ -196,7 +303,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
         {/* Form Body */}
         <div className="p-6 sm:p-8 space-y-6">
           
-          {/* Role Selection Buttons (Different CSS for each) */}
+          {/* Role Selection Buttons */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
               Select User Role / Persona:
@@ -206,7 +313,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
               {/* Citizen Role Tab */}
               <button
                 type="button"
-                onClick={() => setRole('CITIZEN')}
+                onClick={() => { setRole('CITIZEN'); setErrorMsg(null); }}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   role === 'CITIZEN'
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20 scale-[1.02]'
@@ -220,7 +327,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
               {/* Collector Role Tab */}
               <button
                 type="button"
-                onClick={() => setRole('COLLECTOR')}
+                onClick={() => { setRole('COLLECTOR'); setErrorMsg(null); }}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   role === 'COLLECTOR'
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-amber-500/20 scale-[1.02]'
@@ -234,7 +341,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
               {/* Admin Role Tab */}
               <button
                 type="button"
-                onClick={() => setRole('ADMIN')}
+                onClick={() => { setRole('ADMIN'); setMode('LOGIN'); setEmail('shlokmishra576@gmail.com'); setPassword('shlok123'); setErrorMsg(null); }}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   role === 'ADMIN'
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20 scale-[1.02]'
@@ -248,33 +355,39 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
             </div>
           </div>
 
-          {/* Login / Sign Up Switcher Pill */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-4 text-sm font-bold">
-              <button
-                type="button"
-                onClick={() => { setMode('LOGIN'); setErrorMsg(null); }}
-                className={`transition-colors pb-1 border-b-2 ${
-                  mode === 'LOGIN' ? `${currentTheme.iconColor} border-current` : 'text-slate-400 border-transparent'
-                }`}
-              >
-                Login to Account
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMode('SIGNUP'); setErrorMsg(null); }}
-                className={`transition-colors pb-1 border-b-2 ${
-                  mode === 'SIGNUP' ? `${currentTheme.iconColor} border-current` : 'text-slate-400 border-transparent'
-                }`}
-              >
-                Create Account (0% Progress)
-              </button>
-            </div>
+          {/* Mode Switcher Pill */}
+          {role !== 'ADMIN' ? (
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-4 text-sm font-bold">
+                <button
+                  type="button"
+                  onClick={() => { setMode('LOGIN'); setErrorMsg(null); }}
+                  className={`transition-colors pb-1 border-b-2 ${
+                    mode === 'LOGIN' ? `${currentTheme.iconColor} border-current` : 'text-slate-400 border-transparent'
+                  }`}
+                >
+                  Login to Account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode('SIGNUP'); setErrorMsg(null); }}
+                  className={`transition-colors pb-1 border-b-2 ${
+                    mode === 'SIGNUP' ? `${currentTheme.iconColor} border-current` : 'text-slate-400 border-transparent'
+                  }`}
+                >
+                  Create New Account (0% Progress)
+                </button>
+              </div>
 
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${currentTheme.badgeBg}`}>
-              {role} {mode}
-            </span>
-          </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${currentTheme.badgeBg}`}>
+                {role} {mode}
+              </span>
+            </div>
+          ) : (
+            <div className="w-full py-2.5 px-4 rounded-xl bg-slate-950 text-cyan-400 font-bold text-center border border-cyan-500/30 text-xs">
+              ⚡ Single Pre-authorized Admin Login (shlokmishra576@gmail.com)
+            </div>
+          )}
 
           {/* Error Banner */}
           {errorMsg && (

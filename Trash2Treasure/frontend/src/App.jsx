@@ -56,17 +56,18 @@ const getInitialUser = () => {
   } catch (e) {
     console.error('Failed to parse saved session user:', e);
   }
-  return INITIAL_USER;
+  return null;
 };
 
 const getInitialAuth = () => {
-  return localStorage.getItem('t2t_is_authenticated') === 'true';
+  const initialUser = getInitialUser();
+  return localStorage.getItem('t2t_is_authenticated') === 'true' && initialUser !== null;
 };
 
 export default function App() {
   // Authentication Gate State
-  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuth);
   const [user, setUser] = useState(getInitialUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuth);
   const [usersList, setUsersList] = useState(INITIAL_USERS_LIST);
 
   const [activeTab, setActiveTab] = useState('REPORT');
@@ -129,6 +130,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    setUser(null);
     setIsAuthenticated(false);
     try {
       localStorage.removeItem('t2t_session_user');
@@ -188,33 +190,105 @@ export default function App() {
       return;
     }
     setComplaints(prev => [newReport, ...prev]);
-    setUser(u => ({ ...u, ecoPoints: u.ecoPoints + 25 }));
+
+    const pointsAdded = 25;
+    const kgAdded = 5.0;
+
+    let updatedPoints = (user.ecoPoints || 0) + pointsAdded;
+
+    setUser(u => {
+      const updated = {
+        ...u,
+        ecoPoints: (u.ecoPoints || 0) + pointsAdded,
+        recycledThisMonthKg: +((u.recycledThisMonthKg || 0) + kgAdded).toFixed(1),
+        reportsCount: (u.reportsCount || 0) + 1
+      };
+      try {
+        localStorage.setItem('t2t_session_user', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    setUsersList(prev =>
+      prev.map(u => (u.email?.toLowerCase() === user.email?.toLowerCase() || u.id === user.id)
+        ? {
+            ...u,
+            ecoPoints: (u.ecoPoints || 0) + pointsAdded,
+            recycledThisMonthKg: +((u.recycledThisMonthKg || 0) + kgAdded).toFixed(1),
+            reportsCount: (u.reportsCount || 0) + 1
+          }
+        : u
+      )
+    );
+
+    // Create live notification for Citizen & System Notification Bell
+    const newNotification = {
+      id: Date.now(),
+      type: newReport.severity === 'EMERGENCY' ? 'HAZARD' : 'INFO',
+      title: `📝 Report #${newReport.id} Registered!`,
+      message: `Waste report "${newReport.title}" logged. +25 Eco-Pts & +5kg Recycling credited! Total: ${updatedPoints} Pts.`,
+      time: 'Just now',
+      read: false
+    };
+    setNotifications(prev => [newNotification, ...prev]);
 
     // Post to Spring Boot Backend if online
     if (!isOffline) {
       api.createComplaint(newReport);
-      api.updateUserPoints(user.id, 25);
+      api.updateUserPoints(user.id, pointsAdded);
     }
   };
 
-  const handleUpdateComplaintStatus = (id, newStatus, resolutionUrl) => {
+  const handleUpdateComplaintStatus = (id, newStatus, resolutionUrl, collectorNotes) => {
+    let complaintTitle = `Complaint #${id}`;
+
     setComplaints(prev =>
       prev.map(c => {
         if (c.id === id) {
+          if (c.title) complaintTitle = c.title;
           return {
             ...c,
             status: newStatus,
             resolvedAt: newStatus === 'RESOLVED' ? new Date().toISOString() : c.resolvedAt,
-            resolutionImageUrl: resolutionUrl || c.resolutionImageUrl
+            resolutionImageUrl: resolutionUrl || c.resolutionImageUrl,
+            collectorNotes: collectorNotes || c.collectorNotes
           };
         }
         return c;
       })
     );
 
+    // Create live notification for Citizen & Collector Notification Bell
+    let notifTitle = `⚡ Progress Update: #${id}`;
+    let notifMessage = `Status changed to ${newStatus}`;
+    let notifType = 'INFO';
+
+    if (newStatus === 'ASSIGNED') {
+      notifTitle = `🚚 Squad Assigned: #${id}`;
+      notifMessage = `Sanitation squad assigned to "${complaintTitle}". Collector is en route.`;
+    } else if (newStatus === 'IN_PROGRESS') {
+      notifTitle = `🧹 Cleanup In Progress: #${id}`;
+      notifMessage = `Sanitation crew is actively clearing waste for "${complaintTitle}".`;
+    } else if (newStatus === 'RESOLVED') {
+      notifTitle = `🎉 Report #${id} RESOLVED!`;
+      notifMessage = `Waste at "${complaintTitle}" has been fully cleared with photo evidence uploaded!`;
+      notifType = 'RESOLVED';
+    }
+
+    const newNotif = {
+      id: Date.now(),
+      type: notifType,
+      title: notifTitle,
+      message: notifMessage,
+      time: 'Just now',
+      read: false
+    };
+
+    setNotifications(prev => [newNotif, ...prev]);
+
     // Sync status with Spring Boot Backend if online
     if (!isOffline) {
-      api.updateComplaintStatus(id, newStatus, resolutionUrl);
+      api.updateComplaintStatus(id, newStatus, resolutionUrl, collectorNotes);
     }
   };
 
@@ -276,14 +350,14 @@ export default function App() {
     { id: 'MAP', label: 'Smart Bin Telemetry', icon: MapPin }
   ];
 
-  const roleTabs = user.role === 'ADMIN' ? adminTabs : user.role === 'COLLECTOR' ? collectorTabs : citizenTabs;
+  const roleTabs = user?.role === 'ADMIN' ? adminTabs : user?.role === 'COLLECTOR' ? collectorTabs : citizenTabs;
 
   return (
     <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
       
       {/* Top Header Navigation */}
       <Navbar
-        user={user}
+        user={user || { name: 'Guest', role: 'CITIZEN', ecoPoints: 0 }}
         setUser={setUser}
         isOffline={isOffline}
         setIsOffline={setIsOffline}
@@ -303,8 +377,8 @@ export default function App() {
             const isActive = activeTab === tab.id;
 
             let activeColorClass = 'from-emerald-500 to-teal-500 text-slate-950 shadow-emerald-500/20';
-            if (user.role === 'COLLECTOR') activeColorClass = 'from-amber-500 to-orange-500 text-slate-950 shadow-amber-500/20';
-            if (user.role === 'ADMIN') activeColorClass = 'from-cyan-500 to-blue-600 text-white shadow-cyan-500/20';
+            if (user?.role === 'COLLECTOR') activeColorClass = 'from-amber-500 to-orange-500 text-slate-950 shadow-amber-500/20';
+            if (user?.role === 'ADMIN') activeColorClass = 'from-cyan-500 to-blue-600 text-white shadow-cyan-500/20';
 
             return (
               <button
@@ -342,14 +416,14 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         
         {/* Blocked User Warning Banner (If Account Blocked by Admin!) */}
-        {user.status === 'BLOCKED' && (
+        {user?.status === 'BLOCKED' && (
           <div className="p-4 rounded-2xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-xs flex items-center justify-between shadow-xl animate-pulse">
             <div className="flex items-center gap-3">
               <UserX className="w-6 h-6 text-rose-400 shrink-0" />
               <div>
                 <p className="font-bold text-sm">🚫 Account Blocked by Municipal Admin</p>
                 <p className="text-rose-300 mt-0.5">
-                  Reason: {user.blockReason || 'Violating website policies or submitting fake hazard reports.'}
+                  Reason: {user?.blockReason || 'Violating website policies or submitting fake hazard reports.'}
                 </p>
               </div>
             </div>
@@ -363,19 +437,19 @@ export default function App() {
         <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/80 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-md">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-300">Active Session Persona:</span>
-            {user.role === 'CITIZEN' && (
+            {(!user?.role || user?.role === 'CITIZEN') && (
               <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                <UserCheck className="w-4 h-4" /> Citizen Portal ({user.name} • {user.locality || 'Sector 14'})
+                <UserCheck className="w-4 h-4" /> Citizen Portal ({user?.name || 'Citizen'} • {user?.locality || 'Sector 14'})
               </span>
             )}
-            {user.role === 'COLLECTOR' && (
+            {user?.role === 'COLLECTOR' && (
               <span className="text-amber-400 font-bold flex items-center gap-1.5">
-                <Truck className="w-4 h-4" /> Collector Duty Portal ({user.name} • {user.vehicleId || 'FLEET-TRUCK-04'})
+                <Truck className="w-4 h-4" /> Collector Duty Portal ({user?.name} • {user?.vehicleId || 'FLEET-TRUCK-04'})
               </span>
             )}
-            {user.role === 'ADMIN' && (
+            {user?.role === 'ADMIN' && (
               <span className="text-cyan-400 font-bold flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" /> Municipal Authority Control ({user.name} • {user.departmentId || 'MUN-DEPT-882'})
+                <ShieldCheck className="w-4 h-4" /> Municipal Authority Control ({user?.name} • {user?.departmentId || 'MUN-DEPT-882'})
               </span>
             )}
           </div>
@@ -470,6 +544,7 @@ export default function App() {
           isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)}
           user={user}
+          adminEmail={usersList.find(u => u.role === 'ADMIN')?.email || 'shlokmishra576@gmail.com'}
         />
       )}
 

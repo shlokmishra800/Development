@@ -1,9 +1,23 @@
-import React, { useState } from 'react';
-import { Truck, CheckCircle2, IndianRupee, Scale, Clock, MapPin, AlertCircle, ShoppingBag, Camera, AlertOctagon } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import {
+  Truck,
+  CheckCircle2,
+  IndianRupee,
+  Scale,
+  Clock,
+  MapPin,
+  AlertCircle,
+  ShoppingBag,
+  Camera,
+  AlertOctagon,
+  UploadCloud,
+  X
+} from 'lucide-react';
 import { MARKETPLACE_ITEMS } from '../mockData';
 
 export default function CollectorMarketplaceTab({ pickupRequests, onApprovePickup, complaints = [], onUpdateStatus }) {
   const [requests, setRequests] = useState(pickupRequests);
+  const [activeComplaintForResolution, setActiveComplaintForResolution] = useState(null);
 
   const handleApprove = (reqId) => {
     setRequests(prev =>
@@ -25,7 +39,7 @@ export default function CollectorMarketplaceTab({ pickupRequests, onApprovePicku
             Collector Dispatch & Citizen Waste Request Hub
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            View live citizen dumping reports with exact GPS locations, evaluate scrap materials for doorstep pickup, and record cleanup proof.
+            View live citizen dumping reports with exact GPS locations, evaluate scrap materials for doorstep pickup, and record camera photo proof of cleanup.
           </p>
         </div>
 
@@ -107,14 +121,25 @@ export default function CollectorMarketplaceTab({ pickupRequests, onApprovePicku
                   <p className="text-xs text-slate-400 line-clamp-2">{c.description || 'Waste reported at street junction requiring sanitation squad dispatch.'}</p>
                 </div>
 
-                {/* Action button */}
+                {/* Resolution proof preview if resolved */}
+                {isResolved && c.resolutionImageUrl && (
+                  <div className="p-2.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-xs flex items-center gap-3">
+                    <img src={c.resolutionImageUrl} alt="Resolution" className="w-12 h-12 rounded-lg object-cover border border-emerald-500/50" />
+                    <div>
+                      <span className="font-bold text-emerald-400 text-[11px] block">✓ Resolution Proof Verified</span>
+                      <p className="text-[10px] text-slate-400">{c.collectorNotes || 'Cleaned and cleared by Sanitation Squad'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action button: Opens Camera / Resolution Modal */}
                 {!isResolved && onUpdateStatus && (
                   <button
-                    onClick={() => onUpdateStatus(c.id, 'RESOLVED', 'https://images.unsplash.com/photo-1604186837056-8e7c286756f2?w=600&auto=format&fit=crop&q=80')}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-extrabold text-xs shadow-md flex items-center justify-center gap-2 hover:brightness-110"
+                    onClick={() => setActiveComplaintForResolution(c)}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-extrabold text-xs shadow-md flex items-center justify-center gap-2 hover:brightness-110"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Dispatch Fleet & Mark Cleaned (Location Verified)</span>
+                    <Camera className="w-4 h-4" />
+                    <span>📷 Capture Photo Evidence & Mark Resolved</span>
                   </button>
                 )}
               </div>
@@ -212,6 +237,232 @@ export default function CollectorMarketplaceTab({ pickupRequests, onApprovePicku
             ))}
           </div>
         </div>
+
+      </div>
+
+      {/* Collector Photo Evidence Modal */}
+      {activeComplaintForResolution && (
+        <CollectorPhotoModal
+          complaint={activeComplaintForResolution}
+          onClose={() => setActiveComplaintForResolution(null)}
+          onResolve={(id, status, photoUrl, notes) => {
+            onUpdateStatus(id, status, photoUrl, notes);
+            setActiveComplaintForResolution(null);
+          }}
+        />
+      )}
+
+    </div>
+  );
+}
+
+function CollectorPhotoModal({ complaint, onClose, onResolve }) {
+  const [photoUrl, setPhotoUrl] = useState('https://images.unsplash.com/photo-1604186837056-8e7c286756f2?w=600&auto=format&fit=crop&q=80');
+  const [collectorNotes, setCollectorNotes] = useState('Waste cleared completely from location and ground sanitized.');
+  
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      setCameraStream(stream);
+      setIsCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setCameraError('Camera access denied or unavailable. Please upload a photo file or select a preset.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setPhotoUrl(dataUrl);
+      stopCamera();
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const samplePresets = [
+    { label: 'Clean Swept Sidewalk', url: 'https://images.unsplash.com/photo-1604186837056-8e7c286756f2?w=600&auto=format&fit=crop&q=80' },
+    { label: 'Emptied Bin Area', url: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=600&auto=format&fit=crop&q=80' },
+    { label: 'Cleared E-Waste Zone', url: 'https://images.unsplash.com/photo-1550985616-10810253b84d?w=600&auto=format&fit=crop&q=80' }
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!photoUrl) {
+      alert('Please capture or upload photo evidence before marking as resolved!');
+      return;
+    }
+    onResolve(complaint.id, 'RESOLVED', photoUrl, collectorNotes);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="relative w-full max-w-lg bg-[#0e1626] border border-emerald-500/40 rounded-3xl overflow-hidden shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto text-left">
+        
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Camera className="w-5 h-5 text-emerald-400" />
+            <h3 className="font-bold text-slate-100 text-base">
+              Add Photo Evidence for #{complaint.id}
+            </h3>
+          </div>
+          <button
+            onClick={() => { stopCamera(); onClose(); }}
+            className="p-1.5 rounded-full bg-slate-900 text-slate-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-400">
+          Collector mandatory evidence: Capture live photo from device camera or upload image proof of cleaned spot.
+        </p>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*"
+          className="hidden"
+        />
+        <canvas ref={canvasRef} className="hidden" />
+
+        {isCameraActive ? (
+          <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-emerald-500/50 flex flex-col items-center justify-center">
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            <div className="absolute bottom-3 flex items-center gap-3 z-10">
+              <button
+                type="button"
+                onClick={capturePhoto}
+                className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5 hover:brightness-110"
+              >
+                <Camera className="w-4 h-4" /> Capture Snapshot
+              </button>
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="px-3 py-2 rounded-xl bg-slate-900 text-slate-300 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 h-48 flex items-center justify-center">
+              {photoUrl ? (
+                <img src={photoUrl} alt="Evidence Preview" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs text-slate-500">No Photo Selected</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={startCamera}
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md hover:brightness-110"
+              >
+                <Camera className="w-4 h-4" />
+                <span>📷 Open Live Camera</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 text-slate-200 font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <UploadCloud className="w-4 h-4 text-emerald-400" />
+                <span>📁 Upload Photo File</span>
+              </button>
+            </div>
+
+            {cameraError && (
+              <p className="text-[11px] text-rose-400 bg-rose-950/40 p-2 rounded-xl border border-rose-500/30">
+                {cameraError}
+              </p>
+            )}
+
+            <div className="space-y-1">
+              <span className="text-[11px] text-slate-400 font-medium">Sample Presets:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {samplePresets.map((p, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setPhotoUrl(p.url)}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
+                      photoUrl === p.url ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 font-bold' : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Sanitation Officer Field Notes:</label>
+              <textarea
+                value={collectorNotes}
+                onChange={e => setCollectorNotes(e.target.value)}
+                rows={2}
+                placeholder="Field notes (e.g. waste cleared, area disinfected)..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 hover:brightness-110 flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Confirm & Submit Resolution Evidence</span>
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

@@ -5,7 +5,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
   const [showNotifications, setShowNotifications] = useState(false);
 
   const handleRoleClick = (targetRole) => {
-    if (user.role === targetRole) return;
+    if (user?.role === targetRole) return;
     if (onRequireRoleAuth) {
       onRequireRoleAuth(targetRole);
     } else {
@@ -34,7 +34,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
     }
   };
 
-  const currentRoleStyle = roleStyles[user.role] || roleStyles.CITIZEN;
+  const currentRoleStyle = roleStyles[user?.role] || roleStyles.CITIZEN;
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3 transition-colors duration-300">
@@ -91,7 +91,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
             <button
               onClick={() => handleRoleClick('CITIZEN')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                user.role === 'CITIZEN'
+                user?.role === 'CITIZEN'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -102,7 +102,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
             <button
               onClick={() => handleRoleClick('COLLECTOR')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                user.role === 'COLLECTOR'
+                user?.role === 'COLLECTOR'
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -113,7 +113,7 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
             <button
               onClick={() => handleRoleClick('ADMIN')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                user.role === 'ADMIN'
+                user?.role === 'ADMIN'
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-md shadow-cyan-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -143,14 +143,14 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
             className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 text-xs font-semibold text-slate-200 hover:text-emerald-400 flex items-center gap-1.5 transition-all"
           >
             <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden md:inline">Login / Sign Up</span>
+            <span className="hidden md:inline">{user?.name ? 'Switch Account / Logout' : 'Login / Sign Up'}</span>
           </button>
 
           {/* Eco-Points Badge */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-500/30 text-emerald-400 shadow-sm">
             <Sparkles className="w-4 h-4 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
             <span className="text-xs font-semibold text-slate-300 hidden md:inline">Eco-Pts:</span>
-            <span className="text-sm font-extrabold text-emerald-400">{user.ecoPoints}</span>
+            <span className="text-sm font-extrabold text-emerald-400">{user?.ecoPoints || 0}</span>
           </div>
 
           {/* Notifications Dropdown */}
@@ -223,15 +223,15 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
           >
             <div className="relative">
               <img
-                src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                alt={user.name}
+                src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                alt={user?.name || 'User'}
                 className="w-9 h-9 rounded-full border-2 border-emerald-500/60 object-cover group-hover:scale-105 group-hover:border-emerald-400 transition-all shadow-md"
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-950"></span>
             </div>
             <div className="hidden lg:block text-left">
-              <p className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition-colors leading-tight">{user.name}</p>
-              <p className="text-[10px] text-slate-400">{user.role}</p>
+              <p className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition-colors leading-tight">{user?.name || 'Guest User'}</p>
+              <p className="text-[10px] text-slate-400">{user?.role || 'CITIZEN'}</p>
             </div>
           </div>
 

@@ -74,7 +74,9 @@ export const INITIAL_USERS_LIST = [
 export const INITIAL_COMPLAINTS = [
   {
     id: "T2T-8921",
-    citizenName: "Priya Patel",
+    citizenName: "Aarav Sharma",
+    citizenEmail: "citizen@t2t.org",
+    citizenId: "usr-101",
     title: "Illegal E-Waste Spill Near City Park",
     category: "E_WASTE",
     severity: "HIGH",
@@ -93,6 +95,8 @@ export const INITIAL_COMPLAINTS = [
   {
     id: "T2T-8922",
     citizenName: "Aarav Sharma",
+    citizenEmail: "citizen@t2t.org",
+    citizenId: "usr-101",
     title: "Overflowing Plastic & Paper Bin",
     category: "RECYCLABLE",
     severity: "MEDIUM",
@@ -111,6 +115,8 @@ export const INITIAL_COMPLAINTS = [
   {
     id: "T2T-8923",
     citizenName: "Vikram Malhotra",
+    citizenEmail: "vikram_fake@t2t.org",
+    citizenId: "usr-103",
     title: "EMERGENCY: Chemical Container Leak",
     category: "HAZARD",
     severity: "EMERGENCY",
@@ -127,7 +133,9 @@ export const INITIAL_COMPLAINTS = [
   },
   {
     id: "T2T-8924",
-    citizenName: "Sunita Roy",
+    citizenName: "Aarav Sharma",
+    citizenEmail: "citizen@t2t.org",
+    citizenId: "usr-101",
     title: "Wet Organic Waste Accumulation",
     category: "ORGANIC",
     severity: "LOW",

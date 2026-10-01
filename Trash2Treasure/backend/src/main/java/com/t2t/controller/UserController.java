@@ -57,6 +57,10 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
         }
 
+        if (user.getRole() != null && user.getRole().trim().equalsIgnoreCase("ADMIN")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Admin account creation is prohibited. Only pre-authorized Admin credentials can log in."));
+        }
+
         String normalizedEmail = user.getEmail().toLowerCase().trim();
         Optional<User> existing = userRepository.findByEmail(normalizedEmail);
         if (existing.isPresent()) {

@@ -66,93 +66,187 @@ export default function LandingAuthGate({ onLoginSuccess }) {
     if (role === 'ADMIN') avatar = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80';
 
     try {
-      if (mode === 'LOGIN') {
-        // Real MongoDB Atlas Login
-        const targetEmail = email || `${role.toLowerCase()}@t2t.org`;
-        const targetPass = password || 'demo12345';
-        
-        const loginResult = await api.loginUser(targetEmail, targetPass);
+      const normalizedEmail = (email || '').toLowerCase().trim();
+      const targetPass = password || '';
 
-        if (loginResult && loginResult.email) {
+      if (!normalizedEmail) {
+        setIsLoading(false);
+        setErrorMsg('Please enter a valid email address');
+        return;
+      }
+
+      if (role === 'ADMIN' && mode === 'SIGNUP') {
+        setErrorMsg('Admin account creation is prohibited. Only pre-authorized Admin login is allowed.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (mode === 'LOGIN') {
+        // A. Check for Fixed Admin Credentials
+        if (role === 'ADMIN' || normalizedEmail === 'shlokmishra576@gmail.com') {
+          if (normalizedEmail !== 'shlokmishra576@gmail.com' || targetPass !== 'shlok123') {
+            setErrorMsg('Invalid Admin Credentials. Required: shlokmishra576@gmail.com / password: shlok123');
+            setIsLoading(false);
+            return;
+          }
+          const adminUser = {
+            id: 'adm-301',
+            name: 'Shlok Mishra (Admin)',
+            email: 'shlokmishra576@gmail.com',
+            password: 'shlok123',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            ecoPoints: 5000,
+            recycledThisMonthKg: 450.0,
+            monthlyTargetKg: 500.0,
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+            departmentId: 'MUN-DEPT-882'
+          };
+          setIsLoading(false);
+          onLoginSuccess(adminUser);
+          return;
+        }
+
+        // B. Try real Spring Boot / MongoDB Atlas Login
+        const loginResult = await api.loginUser(normalizedEmail, targetPass);
+
+        if (loginResult && loginResult.email && !loginResult.error) {
           setIsLoading(false);
           onLoginSuccess(loginResult);
           return;
         }
 
-        // If backend login returned error or null, check if demo fallback
-        if (loginResult && loginResult.message) {
-          setErrorMsg(loginResult.message);
+        if (loginResult && loginResult.error) {
+          if (loginResult.message && loginResult.message.toLowerCase().includes('password')) {
+            setErrorMsg(loginResult.message);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // C. Check Local Registered Users Array
+        let registeredUsers = [];
+        try {
+          registeredUsers = JSON.parse(localStorage.getItem('t2t_registered_users') || '[]');
+        } catch (e) {}
+
+        const matchedLocalUser = registeredUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+
+        if (matchedLocalUser) {
+          if (matchedLocalUser.password && targetPass && matchedLocalUser.password !== targetPass) {
+            setErrorMsg('Invalid password entered for this account.');
+            setIsLoading(false);
+            return;
+          }
+          setIsLoading(false);
+          onLoginSuccess(matchedLocalUser);
+          return;
+        }
+
+        // D. Check Pre-Seeded Accounts
+        const preSeededUsers = [
+          {
+            id: 'col-201',
+            name: 'Officer Rajesh K.',
+            email: 'collector@t2t.org',
+            password: 'demo12345',
+            role: 'COLLECTOR',
+            ecoPoints: 1250,
+            recycledThisMonthKg: 95.0,
+            monthlyTargetKg: 100.0,
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+            vehicleId: 'FLEET-TRUCK-04'
+          }
+        ];
+
+        const matchedSeededUser = preSeededUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+        if (matchedSeededUser) {
+          if (matchedSeededUser.password && targetPass && matchedSeededUser.password !== targetPass) {
+            setErrorMsg('Invalid password entered for this account.');
+            setIsLoading(false);
+            return;
+          }
+          setIsLoading(false);
+          onLoginSuccess(matchedSeededUser);
+          return;
+        }
+
+        setErrorMsg(`Account "${normalizedEmail}" not found. Please click "Create New Account" below to register your real profile.`);
+        setIsLoading(false);
+        return;
+
+      } else {
+        // SIGNUP / REGISTER Mode: Create Real New Account in MongoDB Atlas & Local Storage
+        if (!name.trim()) {
+          setErrorMsg('Please enter your Full Name to register.');
           setIsLoading(false);
           return;
         }
 
-        // Fallback for demo login if Spring Boot backend is starting up
-        const fallbackUser = {
-          id: `usr-${Math.floor(100 + Math.random() * 900)}`,
-          name: name || (role === 'CITIZEN' ? 'Aarav Sharma' : role === 'COLLECTOR' ? 'Officer Rajesh K.' : 'Director Sunita Roy'),
-          email: targetEmail,
-          role,
-          ecoPoints: role === 'CITIZEN' ? 480 : 1200,
-          monthlyTargetKg: 50.0,
-          recycledThisMonthKg: 38.5,
-          badges: role === 'CITIZEN' ? ['Eco Champion', 'Zero Waste Novice'] : ['Fleet Officer', 'Hazard Specialist'],
-          avatar,
-          locality,
-          vehicleId,
-          departmentId
-        };
-        setIsLoading(false);
-        onLoginSuccess(fallbackUser);
-
-      } else {
-        // Real New Account Registration in MongoDB Atlas (0% progress initially!)
         const newUserData = {
-          name: name || (role === 'CITIZEN' ? 'New Eco Citizen' : role === 'COLLECTOR' ? 'Sanitation Collector' : 'Municipal Admin'),
-          email: email || `user_${Date.now()}@t2t.org`,
-          password: password || 'pass12345',
-          role,
+          id: `usr-${Date.now()}`,
+          name: name.trim(),
+          email: normalizedEmail,
+          password: targetPass || 'pass12345',
+          role: role || 'CITIZEN',
           status: 'ACTIVE',
-          ecoPoints: 0, // Real new user starts at 0 Points (0% progress!)
+          ecoPoints: 0,
           recycledThisMonthKg: 0.0,
           monthlyTargetKg: 50.0,
+          reportsCount: 0,
+          badges: ['New Eco Member'],
           locality: locality || 'Sector 14',
           avatar,
           phone,
           vehicleId,
-          departmentId
+          departmentId,
+          createdAt: new Date().toISOString()
         };
 
         const registerResult = await api.registerUser(newUserData);
 
-        if (registerResult && registerResult.email) {
-          setIsLoading(false);
-          onLoginSuccess(registerResult);
-          return;
-        }
-
-        if (registerResult && registerResult.message) {
+        if (registerResult && registerResult.error) {
           setErrorMsg(registerResult.message);
           setIsLoading(false);
           return;
         }
 
-        // Fallback if backend offline
+        const createdAccount = (registerResult && registerResult.email) ? registerResult : newUserData;
+
+        // Persist locally in registeredUsers list
+        try {
+          let registeredUsers = JSON.parse(localStorage.getItem('t2t_registered_users') || '[]');
+          const idx = registeredUsers.findIndex(u => u.email.toLowerCase() === createdAccount.email.toLowerCase());
+          if (idx >= 0) {
+            registeredUsers[idx] = createdAccount;
+          } else {
+            registeredUsers.push(createdAccount);
+          }
+          localStorage.setItem('t2t_registered_users', JSON.stringify(registeredUsers));
+        } catch (e) {}
+
         setIsLoading(false);
-        onLoginSuccess({ ...newUserData, id: `usr-${Date.now()}` });
+        onLoginSuccess(createdAccount);
       }
     } catch (err) {
       console.error('Auth error:', err);
       setIsLoading(false);
-      setErrorMsg('Authentication error. Please check server logs.');
+      setErrorMsg('Authentication error. Please check server connection.');
     }
   };
 
   const handleQuickDemo = (selectedRole) => {
     setRole(selectedRole);
-    setEmail(`${selectedRole.toLowerCase()}@t2t.org`);
-    setPassword('demo12345');
-    setName(selectedRole === 'CITIZEN' ? 'Aarav Sharma' : selectedRole === 'COLLECTOR' ? 'Officer Rajesh K.' : 'Director Sunita Roy');
     setMode('LOGIN');
+    if (selectedRole === 'ADMIN') {
+      setEmail('shlokmishra576@gmail.com');
+      setPassword('shlok123');
+      setName('Shlok Mishra (Admin)');
+    } else {
+      setEmail(`${selectedRole.toLowerCase()}@t2t.org`);
+      setPassword('demo12345');
+      setName(selectedRole === 'CITIZEN' ? 'Aarav Sharma' : 'Officer Rajesh K.');
+    }
     
     setTimeout(() => {
       handleSubmit(null);
@@ -258,7 +352,7 @@ export default function LandingAuthGate({ onLoginSuccess }) {
 
           {/* 3. Admin Card */}
           <div
-            onClick={() => setRole('ADMIN')}
+            onClick={() => { setRole('ADMIN'); setMode('LOGIN'); setEmail('shlokmishra576@gmail.com'); setPassword('shlok123'); setErrorMsg(null); }}
             className={`p-5 rounded-3xl cursor-pointer border transition-all duration-300 flex flex-col justify-between ${
               role === 'ADMIN'
                 ? 'bg-slate-900/90 border-cyan-500/80 ring-2 ring-cyan-500/40 shadow-2xl scale-[1.02]'
@@ -328,15 +422,21 @@ export default function LandingAuthGate({ onLoginSuccess }) {
             >
               Login to Account
             </button>
-            <button
-              type="button"
-              onClick={() => { setMode('SIGNUP'); setErrorMsg(null); }}
-              className={`w-1/2 py-2 rounded-xl transition-all ${
-                mode === 'SIGNUP' ? `bg-gradient-to-r ${currentConfig.gradient} text-slate-950 shadow-md` : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Create New Account (0% Progress)
-            </button>
+            {role !== 'ADMIN' ? (
+              <button
+                type="button"
+                onClick={() => { setMode('SIGNUP'); setErrorMsg(null); }}
+                className={`w-1/2 py-2 rounded-xl transition-all ${
+                  mode === 'SIGNUP' ? `bg-gradient-to-r ${currentConfig.gradient} text-slate-950 shadow-md` : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Create New Account (0% Progress)
+              </button>
+            ) : (
+              <span className="w-1/2 py-2 text-[10px] text-center text-slate-500 italic">
+                🔒 Signup Disabled for Admin
+              </span>
+            )}
           </div>
 
           {/* Form */}

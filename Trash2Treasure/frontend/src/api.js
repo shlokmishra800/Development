@@ -13,14 +13,19 @@ async function apiRequest(endpoint, options = {}) {
       ...options,
     });
 
+    const data = await response.json().catch(() => null);
+
     if (!response.ok) {
-      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      if (data && data.message) {
+        return { error: true, message: data.message };
+      }
+      return { error: true, message: `HTTP Error ${response.status}: ${response.statusText}` };
     }
 
-    return await response.json();
+    return data;
   } catch (error) {
     console.warn(`[API Fallback] Backend call failed for ${endpoint}:`, error.message);
-    return null; // Return null so callers can handle fallback
+    return null;
   }
 }
 
