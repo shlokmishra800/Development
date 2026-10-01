@@ -222,15 +222,31 @@ export default function App() {
     );
 
     // Create live notification for Citizen & System Notification Bell
-    const newNotification = {
+    const citizenNotif = {
       id: Date.now(),
-      type: newReport.severity === 'EMERGENCY' ? 'HAZARD' : 'INFO',
+      type: newReport.severity === 'EMERGENCY' || newReport.category === 'HAZARD' ? 'HAZARD' : 'INFO',
       title: `📝 Report #${newReport.id} Registered!`,
       message: `Waste report "${newReport.title}" logged. +25 Eco-Pts & +5kg Recycling credited! Total: ${updatedPoints} Pts.`,
       time: 'Just now',
       read: false
     };
-    setNotifications(prev => [newNotification, ...prev]);
+
+    if (newReport.severity === 'EMERGENCY' || newReport.category === 'HAZARD') {
+      const adminEmergencyNotif = {
+        id: Date.now() + 1,
+        type: 'HAZARD',
+        title: `🚨 EMERGENCY HAZARD DISPATCHED: #${newReport.id}`,
+        message: `⚡ Citizen "${newReport.citizenName}" reported an EMERGENCY HAZARD at "${newReport.address}". Image attached! Immediate HazMat response required.`,
+        time: 'Just now',
+        read: false,
+        complaintId: newReport.id,
+        imageUrl: newReport.imageUrl,
+        isEmergency: true
+      };
+      setNotifications(prev => [adminEmergencyNotif, citizenNotif, ...prev]);
+    } else {
+      setNotifications(prev => [citizenNotif, ...prev]);
+    }
 
     // Post to Spring Boot Backend if online
     if (!isOffline) {
@@ -367,6 +383,7 @@ export default function App() {
         onOpenProfile={() => setShowProfileModal(true)}
         onRequireRoleAuth={(targetRole) => setAuthRoleModalTarget(targetRole)}
         onOpenFeedback={() => setShowFeedbackModal(true)}
+        onNavigateTab={(tab) => setActiveTab(tab)}
       />
 
       {/* Role-Specific Filtered Tab Navigation Bar */}
@@ -430,6 +447,34 @@ export default function App() {
             <span className="text-[10px] font-bold uppercase bg-rose-500/30 px-3 py-1 rounded-full text-rose-300 border border-rose-500/50">
               Restricted Mode
             </span>
+          </div>
+        )}
+
+        {/* Admin Live Emergency Hazard Dispatch Banner */}
+        {user?.role === 'ADMIN' && notifications.some(n => n.type === 'HAZARD' && !n.read) && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 border-2 border-rose-500 text-rose-100 text-xs flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl shadow-rose-600/30 animate-pulse">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-400 text-rose-400 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-extrabold text-sm text-rose-200 uppercase tracking-wider flex items-center gap-2">
+                  <span>🚨 HIGH-PRIORITY EMERGENCY HAZARD REPORTED!</span>
+                </p>
+                <p className="text-slate-200 mt-0.5">
+                  {notifications.find(n => n.type === 'HAZARD' && !n.read)?.message}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('TRACKING');
+                setNotifications(prev => prev.map(n => n.type === 'HAZARD' ? { ...n, read: true } : n));
+              }}
+              className="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-black text-xs uppercase tracking-wide flex items-center gap-1.5 shadow-lg shrink-0 transition-all cursor-pointer"
+            >
+              <span>⚡ Respond & Dispatch Unit Now</span>
+            </button>
           </div>
         )}
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Leaf, Bell, Wifi, WifiOff, ShieldCheck, UserCheck, Truck, Sparkles, CheckCircle2, AlertTriangle, LogIn, LogOut, MessageSquarePlus } from 'lucide-react';
 
-export default function Navbar({ user, setUser, isOffline, setIsOffline, notifications, setNotifications, onOpenAuth, onOpenProfile, onRequireRoleAuth, onOpenFeedback }) {
+export default function Navbar({ user, setUser, isOffline, setIsOffline, notifications, setNotifications, onOpenAuth, onOpenProfile, onRequireRoleAuth, onOpenFeedback, onNavigateTab }) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const handleRoleClick = (targetRole) => {
@@ -190,11 +190,17 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
                   {notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-3 rounded-xl border text-xs transition-all ${
+                      onClick={() => {
+                        if (n.type === 'HAZARD' && onNavigateTab) {
+                          onNavigateTab('TRACKING');
+                          setShowNotifications(false);
+                        }
+                      }}
+                      className={`p-3 rounded-xl border text-xs transition-all cursor-pointer ${
                         n.type === 'RESOLVED'
                           ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                           : n.type === 'HAZARD'
-                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-200 hover:bg-rose-500/20'
                           : 'bg-slate-900/60 border-slate-800 text-slate-300'
                       } ${!n.read ? 'ring-1 ring-emerald-500/50' : 'opacity-80'}`}
                     >
@@ -202,10 +208,15 @@ export default function Navbar({ user, setUser, isOffline, setIsOffline, notific
                         {n.type === 'RESOLVED' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />}
                         {n.type === 'HAZARD' && <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />}
                         {n.type === 'INFO' && <Bell className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />}
-                        <div>
+                        <div className="flex-1">
                           <p className="font-semibold">{n.title}</p>
                           <p className="text-[11px] text-slate-400 mt-0.5">{n.message}</p>
-                          <span className="text-[10px] text-slate-500 mt-1 block">{n.time}</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[10px] text-slate-500">{n.time}</span>
+                            {n.type === 'HAZARD' && (
+                              <span className="text-[10px] font-bold text-rose-400 underline">Respond Now ⚡</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
