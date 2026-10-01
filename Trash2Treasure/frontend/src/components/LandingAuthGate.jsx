@@ -85,7 +85,7 @@ export default function LandingAuthGate({ onLoginSuccess }) {
         // A. Check for Fixed Admin Credentials
         if (role === 'ADMIN' || normalizedEmail === 'shlokmishra576@gmail.com') {
           if (normalizedEmail !== 'shlokmishra576@gmail.com' || targetPass !== 'shlok123') {
-            setErrorMsg('Invalid Admin Credentials. Required: shlokmishra576@gmail.com / password: shlok123');
+            setErrorMsg('Invalid Admin Email or Password. Access Denied.');
             setIsLoading(false);
             return;
           }
@@ -236,17 +236,15 @@ export default function LandingAuthGate({ onLoginSuccess }) {
   };
 
   const handleQuickDemo = (selectedRole) => {
+    if (selectedRole === 'ADMIN') {
+      setErrorMsg('Instant Demo is disabled for Admin. Please enter authorized email & password manually.');
+      return;
+    }
     setRole(selectedRole);
     setMode('LOGIN');
-    if (selectedRole === 'ADMIN') {
-      setEmail('shlokmishra576@gmail.com');
-      setPassword('shlok123');
-      setName('Shlok Mishra (Admin)');
-    } else {
-      setEmail(`${selectedRole.toLowerCase()}@t2t.org`);
-      setPassword('demo12345');
-      setName(selectedRole === 'CITIZEN' ? 'Aarav Sharma' : 'Officer Rajesh K.');
-    }
+    setEmail(`${selectedRole.toLowerCase()}@t2t.org`);
+    setPassword('demo12345');
+    setName(selectedRole === 'CITIZEN' ? 'Aarav Sharma' : 'Officer Rajesh K.');
     
     setTimeout(() => {
       handleSubmit(null);
@@ -352,7 +350,7 @@ export default function LandingAuthGate({ onLoginSuccess }) {
 
           {/* 3. Admin Card */}
           <div
-            onClick={() => { setRole('ADMIN'); setMode('LOGIN'); setEmail('shlokmishra576@gmail.com'); setPassword('shlok123'); setErrorMsg(null); }}
+            onClick={() => { setRole('ADMIN'); setMode('LOGIN'); setEmail(''); setPassword(''); setErrorMsg(null); }}
             className={`p-5 rounded-3xl cursor-pointer border transition-all duration-300 flex flex-col justify-between ${
               role === 'ADMIN'
                 ? 'bg-slate-900/90 border-cyan-500/80 ring-2 ring-cyan-500/40 shadow-2xl scale-[1.02]'

@@ -11,8 +11,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
       setRole(initialRole);
       if (initialRole === 'ADMIN') {
         setMode('LOGIN');
-        setEmail('shlokmishra576@gmail.com');
-        setPassword('shlok123');
+        setEmail('');
+        setPassword('');
       }
     }
   }, [initialRole]);
@@ -63,7 +63,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
         // A. Special Check for Fixed Admin Credentials
         if (role === 'ADMIN' || normalizedEmail === 'shlokmishra576@gmail.com') {
           if (normalizedEmail !== 'shlokmishra576@gmail.com' || targetPass !== 'shlok123') {
-            setErrorMsg('Invalid Admin Credentials. Required: shlokmishra576@gmail.com / password: shlok123');
+            setErrorMsg('Invalid Admin Email or Password. Access Denied.');
             setIsLoading(false);
             return;
           }
@@ -262,7 +262,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
       badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
       btnGradient: 'from-cyan-500 to-blue-600 text-white shadow-cyan-500/20',
       iconColor: 'text-cyan-400',
-      tagline: '⚡ Admin Portal • Authorized Login Only (shlokmishra576@gmail.com)'
+      tagline: '⚡ Municipal Authority • Secure Admin Login'
     }
   };
 
@@ -341,7 +341,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
               {/* Admin Role Tab */}
               <button
                 type="button"
-                onClick={() => { setRole('ADMIN'); setMode('LOGIN'); setEmail('shlokmishra576@gmail.com'); setPassword('shlok123'); setErrorMsg(null); }}
+                onClick={() => { setRole('ADMIN'); setMode('LOGIN'); setEmail(''); setPassword(''); setErrorMsg(null); }}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   role === 'ADMIN'
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20 scale-[1.02]'
@@ -385,7 +385,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initialRole
             </div>
           ) : (
             <div className="w-full py-2.5 px-4 rounded-xl bg-slate-950 text-cyan-400 font-bold text-center border border-cyan-500/30 text-xs">
-              ⚡ Single Pre-authorized Admin Login (shlokmishra576@gmail.com)
+              ⚡ Secure Admin Access (Enter credentials to proceed)
             </div>
           )}
 
